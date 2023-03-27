@@ -1,0 +1,13 @@
+filesys header file structure:
+
+      utils.h
+         |
+       FAT.h      
+         |     
+      filesys.h 
+   /            \
+pennFAT.h   filesysInterface.h
+
+hd -s 0 -n 2 testFS
+od -t x2 -j 0 -N 2 --endian=little testFS
+

@@ -12,7 +12,10 @@
 
 #include <stdio.h>
 
-#define DEBUG_INFO 1
+#define FS_DEBUG_INFO 1
+#define FS_SUCCESS 0
+#define FS_FAILURE -1
+#define FS_NOT_FOUND -1
 
 #endif
 

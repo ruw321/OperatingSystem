@@ -6,9 +6,9 @@ FATConfig *createFATConfig(char *name, uint16_t LSB, uint16_t MSB) {
     strcpy(newConfig->name, name);
     newConfig->LSB = LSB;
     newConfig->MSB = MSB;
-    newConfig->blockSize = 256 << LSB;
-    newConfig->blockNum = MSB;
-    newConfig->FATRegionSize = newConfig->blockSize * newConfig->blockNum;
+    newConfig->blockSize = MIN_BLOCK_SIZE << LSB;
+    newConfig->FATRegionBlockNum = MSB;
+    newConfig->FATRegionSize = newConfig->blockSize * newConfig->FATRegionBlockNum;
     newConfig->FATEntryNum = newConfig->FATRegionSize / FAT_ENTRY_SIZE;
     newConfig->dataRegionSize = newConfig->blockSize * (newConfig->FATEntryNum - 1);
 
@@ -19,10 +19,10 @@ FATConfig *createFATConfig(char *name, uint16_t LSB, uint16_t MSB) {
 
 uint16_t *createFAT16InMemory(FATConfig *config) {
     uint16_t *newFAT16 = malloc(config->FATSizeInMemory); // uint16_t is of size 2-byte, therefore, it can be considered as the entry of PennFAT which is based on FAT16
-    memset(newFAT16, 0x0000, config->FATSizeInMemory); // initialize FAT entries to 0x0000
+    memset(newFAT16, EMPTY_FAT_ENTRY, config->FATSizeInMemory); // initialize FAT entries to 0x0000
 
     newFAT16[0] = config->LSB + (config->MSB << 8); // The first entry of the FAT will specify the config.
-    newFAT16[1] = 0xFFFF; // The first block of data region will be used for root directory.
+    newFAT16[1] = NO_SUCC_FAT_ENTRY; // The first block of data region will be used for root directory.
     /* The remaining entries are set to 0x0000. */
 
     return newFAT16;
@@ -30,32 +30,55 @@ uint16_t *createFAT16InMemory(FATConfig *config) {
 
 /* Because of endianness, hexdump may display FAT differently from the one in memory.*/
 int createFATOnDisk(FATConfig *config) {
-    int fd = open(config->name, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    int fd = open(config->name, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        printf("Open Error: Fail to open %s\n", config->name);
+        return FS_FAILURE;
+    }
 
     /* write the FAT region to file */
     uint16_t *FAT = createFAT16InMemory(config);
-    write(fd, FAT, config->FATRegionSize);
+    int res = write(fd, FAT, config->FATRegionSize);
     free(FAT);
+
+    if (res < config->FATRegionSize) {
+        printf("Write Error: Fail to write FAT region on the disk.\n");
+        return FS_FAILURE;
+    }
 
     /* claim space for the data region */
     char writeBuffer[config->blockSize];
-    memset(writeBuffer, '0', config->blockSize);
-    for (int i = 1; i < config->FATEntryNum; i++) {
-        write(fd, writeBuffer, config->blockSize);
+
+    /* Initialize the root directory block. */
+    memset(writeBuffer, DIRECTORY_END[0], config->blockSize);
+    res = write(fd, writeBuffer, config->blockSize);
+    if (res < config->blockSize) {
+        printf("Write Error: Fail to write data block on the disk.\n");
+        return FS_FAILURE;
+    }
+
+    /* Initialize the remaining data block. */
+    memset(writeBuffer, '\0', config->blockSize);
+    for (int i = 2; i < config->FATEntryNum; i++) {
+        res = write(fd, writeBuffer, config->blockSize);
+        if (res < config->blockSize) {
+            printf("Write Error: Fail to write data block on the disk.\n");
+            return FS_FAILURE;
+        }
     }
 
     close(fd);
-    return 0;
+    return FS_SUCCESS;
 }
 
 int findEmptyFAT16Entry(FATConfig *config, uint16_t *FAT16) {
     for (int i = 1; i < config->FATEntryNum; i++) { // the first and second entry of FAT are config and root directory
-        if (FAT16[i] == 0x0000) {
+        if (FAT16[i] == EMPTY_FAT_ENTRY) {
             return i;
         }
     }
 
-    return -1; // no empty entry
+    return FS_NOT_FOUND;
 }
 
 DirectoryEntry *createDirectoryEntry(char *name, uint32_t size, uint16_t firstBlock, uint8_t type, uint8_t perm) {
@@ -86,42 +109,42 @@ int createFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, char *fileName
             int offset = dataRegionOffset + (curBlock - 1) * blockSize + i * DIRECTORY_ENTRY_SIZE;
             lseek(fd, offset, SEEK_SET);
             read(fd, &marker, sizeof(char));
-            if (marker == DIRECTORY_END || marker == DELETED_DIRECTORY) {
+            if (marker == DIRECTORY_END[0] || marker == DELETED_DIRECTORY[0]) {
                 /* Write directory entry. */
-                DirectoryEntry *newEntry = createDirectoryEntry(fileName, 0, 0xFFFF, fileType, filePerm);
+                DirectoryEntry *newEntry = createDirectoryEntry(fileName, 0, NO_FIRST_BLOCK, fileType, filePerm);
                 lseek(fd, offset, SEEK_SET);
                 write(fd, newEntry, DIRECTORY_ENTRY_SIZE);
 
                 free(newEntry);
                 close(fd);
-                return 0;
+                return offset;
             }   
         }
 
-        if (FAT16[curBlock] == 0xFFFF) { // There is no available entry in the current directory block and there is not another directory block.
+        if (FAT16[curBlock] == NO_SUCC_FAT_ENTRY) { // There is no available entry in the current directory block and there is not more directory block.
 
             int newDirectoryBlock = findEmptyFAT16Entry(config, FAT16);
 
-            if (newDirectoryBlock == -1) { // There is no empty block.
-                printf("Error: Fail to create a new directory block.\n");
+            if (newDirectoryBlock == FS_NOT_FOUND) {
+                printf("Error: No empty data block. Fail to create a new directory block.\n");
                 close(fd);
-                return -1;
+                return FS_FAILURE;
             }
 
-            #ifdef DEBUG_INFO
+            #ifdef FS_DEBUG_INFO
             printf("Claim a new directory block with idx = %d\n", newDirectoryBlock);
             #endif
 
             FAT16[curBlock] = newDirectoryBlock;
 
             /* Initialize the new directory block. */
-            FAT16[newDirectoryBlock] = 0xFFFF;
+            FAT16[newDirectoryBlock] = NO_SUCC_FAT_ENTRY;
 
             int offset = dataRegionOffset + (newDirectoryBlock - 1) * blockSize;
             lseek(fd, offset, SEEK_SET);
 
             char writeBuffer[blockSize];
-            memset(writeBuffer, '0', blockSize);
+            memset(writeBuffer, DIRECTORY_END[0], blockSize);
             write(fd, writeBuffer, blockSize);
         }
 
@@ -130,11 +153,11 @@ int createFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, char *fileName
 
     printf("Error: Something unexpected happened in createFileDirectoryOnDisk().\n");
     close(fd);
-    return -1;
+    return FS_FAILURE;
 
 }
 
-int findFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, char *fileName) {
+int findFileDirectory(FATConfig *config, uint16_t *FAT16, char *fileName) {
     int fd = open(config->name, O_RDONLY);
     int dataRegionOffset = config->FATRegionSize;
     int blockSize = config->blockSize;
@@ -143,13 +166,14 @@ int findFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, char *fileName) 
     char *readBuffer = malloc(MAX_FILE_NAME_LENGTH);
 
     while (true) { // Traverse all directory blocks.
+        
         for (int i = 0; i < blockSize / DIRECTORY_ENTRY_SIZE; i++) { // Check all directory entries.
             int offset = dataRegionOffset + (curBlock - 1) * blockSize + i * DIRECTORY_ENTRY_SIZE;
             lseek(fd, offset, SEEK_SET);
             read(fd, readBuffer, sizeof(char) * MAX_FILE_NAME_LENGTH);
             if (strcmp(readBuffer, fileName) == 0) {
 
-                #ifdef DEBUG_INFO
+                #ifdef FS_DEBUG_INFO
                 printf("File directory of %s is found.\n", fileName);
                 #endif
 
@@ -158,20 +182,288 @@ int findFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, char *fileName) 
                 return offset;
             }
         }
+        
 
-        if (FAT16[curBlock] == 0xFFFF) { // There is no available entry in the current directory block and there is not another directory block.
+        if (FAT16[curBlock] == NO_SUCC_FAT_ENTRY) { // There is no available entry in the current directory block and there is not another directory block.
             break;
         } else {
             curBlock = FAT16[curBlock];
+            if (curBlock >= config->FATEntryNum) {
+                printf("Error: Invalid block idx %d", curBlock);
+                return FS_FAILURE;
+            }
         }
 
     }
 
-    #ifdef DEBUG_INFO
+    #ifdef FS_DEBUG_INFO
     printf("File directory of %s does not exist.\n", fileName);
     #endif
 
     free(readBuffer);
     close(fd);
-    return -1;
+    return FS_NOT_FOUND;
+}
+
+int readDirectoryEntry(FATConfig *config, int offset, DirectoryEntry *dir) {
+    int fd = open(config->name, O_RDONLY);
+    lseek(fd, offset, SEEK_SET);
+
+    int res = read(fd, dir, DIRECTORY_ENTRY_SIZE);
+    if (res == -1) {
+        perror("Read Error: Unexpected Behavior");
+        close(fd);
+        return FS_FAILURE;
+    } else if (res < DIRECTORY_ENTRY_SIZE) {
+        perror("Read Error: Unable to read whole directory entry.");
+        close(fd);
+        return FS_FAILURE;
+    }
+
+    close(fd);
+    return FS_SUCCESS;
+}
+
+int writeFileDirectory(FATConfig *config, int offset, DirectoryEntry *dir) {
+    int fd = open(config->name, O_WRONLY);
+    lseek(fd, offset, SEEK_SET);
+
+    int res = write(fd, dir, DIRECTORY_ENTRY_SIZE);
+    if (res == -1) {
+        perror("Write Error: Unexpected Behavior");
+        close(fd);
+        return FS_FAILURE;
+    } else if (res < DIRECTORY_ENTRY_SIZE) {
+        perror("Write Error: Unable to write whole directory entry.");
+        close(fd);
+        return FS_FAILURE;
+    }
+
+    close(fd);
+    return FS_SUCCESS;
+}
+
+int deleteFileDirectory(FATConfig *config, uint16_t *FAT16, char *fileName) {
+    int offset = findFileDirectory(config, FAT16, fileName);
+    if (offset == -1) {
+        #ifdef FS_DEBUG_INFO
+        printf("Warning: No such file directory %s to delete.\n", fileName);
+        #endif
+        return FS_SUCCESS;
+    }
+
+    DirectoryEntry dir;
+    int res = readDirectoryEntry(config, offset, &dir);
+    if (res == FS_FAILURE) {
+        printf("Error: Fail to read directory entry at offset %d.", offset);
+        return FS_FAILURE;
+    }
+
+    /* Mark the directory entry as deleted. */
+    int fd = open(config->name, O_WRONLY);
+    lseek(fd, offset, SEEK_SET);
+    write(fd, DELETED_DIRECTORY, sizeof(char));
+    close(fd);
+
+    /* Release all blocks occupied by the file in FAT. */
+    uint16_t curBlock = dir.firstBlock;
+
+    if (curBlock == NO_FIRST_BLOCK) { // It is an empty file.
+        #ifdef FS_DEBUG_INFO
+        printf("File %s is an empty file. No block to release.\n", fileName);
+        #endif
+
+        return FS_SUCCESS;
+    }
+
+    while (curBlock != NO_SUCC_FAT_ENTRY) {
+        if (curBlock >= config->FATEntryNum) {
+            printf("Error: Invalid block idx %d", curBlock);
+            return FS_FAILURE;
+        }
+
+        uint16_t nextBlock = FAT16[curBlock];
+        FAT16[curBlock] = EMPTY_FAT_ENTRY;
+        /* Here we perform the lazy deletion. The data block will not be flushed. */
+
+        #ifdef FS_DEBUG_INFO
+        printf("Block %d is released.\n", curBlock);
+        #endif
+
+        curBlock = nextBlock;
+    }
+
+    #ifdef FS_DEBUG_INFO
+    printf("File directory %s is deleted from FAT.\n", fileName);
+    #endif
+        
+    return FS_SUCCESS;
+}
+
+int readFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, char *buffer) {
+    int fd = open(config->name, O_RDONLY);
+    int dataRegionOffset = config->FATRegionSize;
+    int blockSize = config->blockSize;
+
+    int byteToRead = size;
+    int curBlock = startBlock;
+    int curBlockOffset = startBlockOffset;
+    while (byteToRead > 0) {
+        if (FAT16[curBlock] == EMPTY_FAT_ENTRY) {
+            printf("Error: Invalid read. The block %d is unused.\n", curBlock);
+            return FS_FAILURE;
+        }
+
+        int offset = dataRegionOffset + (curBlock - 1) * blockSize + curBlockOffset;
+        lseek(fd, offset, SEEK_SET);
+        int curByteToRead = byteToRead < blockSize - curBlockOffset ? byteToRead : blockSize - curBlockOffset;
+        
+        int res = read(fd, buffer, curByteToRead);
+        if (res == -1) {
+            perror("Read Error: Unexpected Behavior");
+            close(fd);
+            return FS_FAILURE;
+        } else if (res < curByteToRead) {
+            perror("Read Error: Unable to read all bytes.");
+            close(fd);
+            return res + size - byteToRead;
+        }
+
+        byteToRead -= curByteToRead;
+
+        #ifdef FS_DEBUG_INFO
+        printf("Read %d bytes from block %d with offset %d.\n", curByteToRead, curBlock, curBlockOffset);
+        #endif
+
+        if (byteToRead > 0) { // There are still some bytes to read.
+            if (FAT16[curBlock] == NO_SUCC_FAT_ENTRY) {
+                printf("Error: %d bytes to read. But file ends at block %d.\n", curBlock, byteToRead);
+                return size - byteToRead;
+            }
+
+            curBlock = FAT16[curBlock];
+            curBlockOffset = 0;
+
+            buffer += curByteToRead;
+        }
+    }
+
+    #ifdef FS_DEBUG_INFO
+    printf("Successfully read %d bytes.\n", size);
+    #endif
+
+    close(fd);
+    return size;
+}
+
+int writeFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, char *buffer) {
+    int fd = open(config->name, O_WRONLY);
+    int dataRegionOffset = config->FATRegionSize;
+    int blockSize = config->blockSize;
+
+    int byteToWrite = size;
+    int curBlock = startBlock;
+    int curBlockOffset = startBlockOffset;
+    while (byteToWrite > 0) {
+        /* Write to the current block. */
+        if (FAT16[curBlock] == EMPTY_FAT_ENTRY) {
+            FAT16[curBlock] = NO_SUCC_FAT_ENTRY; // this block is used now
+        }
+
+        int offset = dataRegionOffset + (curBlock - 1) * blockSize + curBlockOffset;
+        lseek(fd, offset, SEEK_SET);
+        int curByteToWrite = byteToWrite < blockSize - curBlockOffset ? byteToWrite : blockSize - curBlockOffset;
+        
+        int res = write(fd, buffer, curByteToWrite);
+        if (res == -1) {
+            perror("Write Error: Unexpected Behavior");
+            close(fd);
+            return FS_FAILURE;
+        } else if (res < curByteToWrite) {
+            perror("Write Error: Unable to write all bytes.");
+            close(fd);
+            return res + size - byteToWrite;
+        }
+    
+        byteToWrite -= curByteToWrite;
+        
+        #ifdef FS_DEBUG_INFO
+        printf("Write %d bytes to block %d with offset %d.\n", curByteToWrite, curBlock, curBlockOffset);
+        #endif
+
+        if (byteToWrite > 0) { // There are still some bytes to write.
+            /* Find a new empty block to write. */
+            int nextBlock = findEmptyFAT16Entry(config, FAT16);
+
+            if (nextBlock == FS_NOT_FOUND) {
+                printf("Error: No emtpy data block. Fail to write remaining %d bytes.\n", byteToWrite);
+                close(fd);
+                return size - byteToWrite;
+            }
+
+            #ifdef FS_DEBUG_INFO
+            printf("Claim a new data block with idx = %d.\n", nextBlock);
+            #endif
+
+            FAT16[curBlock] = nextBlock;
+            curBlock = nextBlock;
+            curBlockOffset = 0;
+
+            buffer += curByteToWrite;
+        }
+    }
+
+    #ifdef FS_DEBUG_INFO
+    printf("Successfully write %d bytes.\n", size);
+    #endif
+
+    close(fd);
+    return size;
+}
+
+int traceFileEnd(FATConfig *config, uint16_t *FAT16, char *fileName) {
+    int directoryEntryOffset = findFileDirectory(config, FAT16, fileName);
+    if (directoryEntryOffset == -1) {
+
+        #ifdef FS_DEBUG_INFO
+        printf("Warning: No such file directory %s to trace end.\n", fileName);
+        #endif
+
+        return 0;
+    }
+
+    DirectoryEntry dir;
+    int res = readDirectoryEntry(config, directoryEntryOffset, &dir);
+    if (res == FS_FAILURE) {
+        printf("Error: Fail to read directory entry at offset %d.", directoryEntryOffset);
+        return FS_FAILURE;
+    }
+
+    int offset = dir.size % config->blockSize; // file end offset of an empty file will be 0
+
+    uint16_t curBlock = dir.firstBlock;
+    if (curBlock == NO_FIRST_BLOCK) { // It is an empty file.
+
+        #ifdef FS_DEBUG_INFO
+        printf("Warning: File %s is an empty file. The end offset is undecided.\n", fileName);
+        #endif
+
+        return 0;
+    }
+
+    while (FAT16[curBlock] != NO_SUCC_FAT_ENTRY) {
+        if (curBlock >= config->FATEntryNum) {
+            printf("Error: Invalid block idx %d", curBlock);
+            return FS_FAILURE;
+        }
+        curBlock = FAT16[curBlock];
+    }
+
+    offset += config->FATRegionSize + (curBlock - 1) * config->blockSize;
+
+    #ifdef FS_DEBUG_INFO
+    printf("The end offset of file %s is %d.\n", fileName, offset);
+    #endif
+
+    return offset;
 }

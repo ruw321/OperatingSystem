@@ -6,8 +6,9 @@ filesys header file structure:
          |     
       filesys.h 
    /            \
-pennFAT.h   filesysInterface.h
+pennFAT.h   interface.h
 
 hd -s 0 -n 2 testFS
 od -t x2 -j 0 -N 2 --endian=little testFS
 
+hexdump will display 16 bytes per line. The line index is in hex.

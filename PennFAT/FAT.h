@@ -58,12 +58,12 @@ typedef struct FATConfig {
 #define FILE_TYPE_DIRECTORY 2
 #define FILE_TYPE_SYMBOLIC_LINK 4
 
-#define FILE_PERM_NONE 0
-#define FILE_PERM_WRITE 2
-#define FILE_PERM_READ 4
-#define FILE_PERM_READ_EXEC 5
-#define FILE_PERM_READ_WRITE 6
-#define FILE_PERM_READ_WRITE_EXEC 7
+#define FILE_PERM_NONE 0  // 000
+#define FILE_PERM_WRITE 2 // 010
+#define FILE_PERM_READ 4  // 100
+#define FILE_PERM_READ_EXEC 5 // 101
+#define FILE_PERM_READ_WRITE 6 // 110
+#define FILE_PERM_READ_WRITE_EXEC 7 // 111
 
 #define RESERVED_BYTES 16
 /* 
@@ -101,7 +101,7 @@ typedef struct DirectoryEntry {
     char reserved[RESERVED_BYTES];   // 16-byte reserved space for extension
 } DirectoryEntry;
 
-FATConfig *createFATConfig(char *name, uint16_t LSB, uint16_t MSB);
+FATConfig *createFATConfig(const char *name, uint16_t LSB, uint16_t MSB);
 
 uint16_t *createFAT16InMemory(FATConfig *config);
 
@@ -112,12 +112,12 @@ int createFATOnDisk(FATConfig *config);
 /* Return the index of next empty FAT entry. */
 int findEmptyFAT16Entry(FATConfig *config, uint16_t *FAT16);
 
-DirectoryEntry *createDirectoryEntry(char *name, uint32_t size, uint16_t firstBlock, uint8_t type, uint8_t perm);
+DirectoryEntry *createDirectoryEntry(const char *name, uint32_t size, uint16_t firstBlock, uint8_t type, uint8_t perm);
 
-int createFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, char *fileName, uint8_t fileType, uint8_t filePerm);
+int createFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, const char *fileName, uint8_t fileType, uint8_t filePerm);
 
 /* Return the offset of the file directory entry in data region. */
-int findFileDirectory(FATConfig *config, uint16_t *FAT16, char *fileName);
+int findFileDirectory(FATConfig *config, uint16_t *FAT16, const char *fileName);
 
 /* Read the directory entry from FAT and set it to dir. */
 int readDirectoryEntry(FATConfig *config, int offset, DirectoryEntry *dir);
@@ -125,13 +125,13 @@ int readDirectoryEntry(FATConfig *config, int offset, DirectoryEntry *dir);
 /* Write the directory entry to the offset. */
 int writeFileDirectory(FATConfig *config, int offset, DirectoryEntry *dir);
 
-int deleteFileDirectory(FATConfig *config, uint16_t *FAT16, char *fileName);
+int deleteFileDirectory(FATConfig *config, uint16_t *FAT16, const char *fileName);
 
 int readFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, char *buffer);
 
 int writeFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, char *buffer);
 
 /* Return the offset of the file end. */
-int traceFileEnd(FATConfig *config, uint16_t *FAT16, char *fileName);
+int traceFileEnd(FATConfig *config, uint16_t *FAT16, const char *fileName);
 
 #endif

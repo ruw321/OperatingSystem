@@ -1,6 +1,6 @@
 #include "FAT.h"
 
-FATConfig *createFATConfig(char *name, uint16_t LSB, uint16_t MSB) {
+FATConfig *createFATConfig(const char *name, uint16_t LSB, uint16_t MSB) {
     FATConfig *newConfig = malloc(sizeof(FATConfig));
 
     strcpy(newConfig->name, name);
@@ -81,7 +81,7 @@ int findEmptyFAT16Entry(FATConfig *config, uint16_t *FAT16) {
     return FS_NOT_FOUND;
 }
 
-DirectoryEntry *createDirectoryEntry(char *name, uint32_t size, uint16_t firstBlock, uint8_t type, uint8_t perm) {
+DirectoryEntry *createDirectoryEntry(const char *name, uint32_t size, uint16_t firstBlock, uint8_t type, uint8_t perm) {
     DirectoryEntry *newEntry = malloc(DIRECTORY_ENTRY_SIZE);
     memset(newEntry, 0, DIRECTORY_ENTRY_SIZE); // initialize the memory to 0 for the reserved space
 
@@ -96,7 +96,7 @@ DirectoryEntry *createDirectoryEntry(char *name, uint32_t size, uint16_t firstBl
     return newEntry;
 }
 
-int createFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, char *fileName, uint8_t fileType, uint8_t filePerm) {
+int createFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, const char *fileName, uint8_t fileType, uint8_t filePerm) {
     int fd = open(config->name, O_RDWR);
     int dataRegionOffset = config->FATRegionSize;
     int blockSize = config->blockSize;
@@ -157,7 +157,7 @@ int createFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, char *fileName
 
 }
 
-int findFileDirectory(FATConfig *config, uint16_t *FAT16, char *fileName) {
+int findFileDirectory(FATConfig *config, uint16_t *FAT16, const char *fileName) {
     int fd = open(config->name, O_RDONLY);
     int dataRegionOffset = config->FATRegionSize;
     int blockSize = config->blockSize;
@@ -243,7 +243,7 @@ int writeFileDirectory(FATConfig *config, int offset, DirectoryEntry *dir) {
     return FS_SUCCESS;
 }
 
-int deleteFileDirectory(FATConfig *config, uint16_t *FAT16, char *fileName) {
+int deleteFileDirectory(FATConfig *config, uint16_t *FAT16, const char *fileName) {
     int offset = findFileDirectory(config, FAT16, fileName);
     if (offset == -1) {
         #ifdef FS_DEBUG_INFO
@@ -421,7 +421,7 @@ int writeFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockO
     return size;
 }
 
-int traceFileEnd(FATConfig *config, uint16_t *FAT16, char *fileName) {
+int traceFileEnd(FATConfig *config, uint16_t *FAT16, const char *fileName) {
     int directoryEntryOffset = findFileDirectory(config, FAT16, fileName);
     if (directoryEntryOffset == -1) {
 

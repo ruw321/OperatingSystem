@@ -3,33 +3,38 @@
 int main(int argc, char **argv) {
     printf("Testing PennFAT ...\n");
     
-    // fs_mkfs("testFS", 0, 1);
+    pf_mkfs("testFS", 1, 0);
 
     fs_mount("testFS");
+
+    // int L = 100;
+    // char str[L];
+    // srand((unsigned int)time(NULL));
+    // for (int i = 0; i < L - 1; i++) {
+    //     str[i] = rand() % 26 + 'a';
+    // }
     
 
-    // int N = 5; 
+    // int N = 2; 
     // char filenames[N][32];  
 
     // for (int i = 0; i < N; i++) {
-    //     sprintf(filenames[i], "file_%d", i+1); 
+    //     sprintf(filenames[i], "file%d", i+1); 
     // }
 
     // for (int i = 0; i < N; i++) {
     //     fs_touch(filenames[i]);
     // }
 
-    // fs_rm("file_1");
 
-    // fs_touch("test");
+    fs_touch("test");
+    
 
-    pf_writeFile("file_2", 4, "1234", PF_APPEND);
+    pf_writeFile("test", 4, "123\n", PF_APPEND);
+    pf_writeFile("test", 4, "abc\n", PF_APPEND);
 
-    char buffer[100];
-    pf_readFile("file_2", 3, buffer);
-    printf("Read %s\n", buffer);
+
 
     fs_unmount();
-
     return 0;
 }

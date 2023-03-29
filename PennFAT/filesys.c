@@ -14,18 +14,23 @@ So the consistency of PennFAT may not be ensured.
 */
 uint16_t *fs_FAT16InMemory = NULL;
 
-int fs_mkfs(char *fsName, uint16_t blockSizeConfig, uint16_t FATRegionBlockNum) {
-    FATConfig *config = createFATConfig("testFS", blockSizeConfig, FATRegionBlockNum);
+int fs_mkfs(const char *fsName, uint16_t blockSizeConfig, uint16_t FATRegionBlockNum) {
+    FATConfig *config = createFATConfig(fsName, blockSizeConfig, FATRegionBlockNum);
     int res = createFATOnDisk(config);
     if (res == FS_FAILURE) {
         printf("Error: Fail to create FAT on disk.\n");
     }
 
+    #ifdef FS_DEBUG_INFO
+    printf("File system %s is created.\n", fsName);
+    printf("FAT Spec:\n- Block size: %d\n- FAT region: %d-byte\n- Data region: %d-byte\n", config->blockSize, config->FATRegionSize, config->dataRegionSize);
+    #endif
+
     free(config);
     return res;
 }
 
-int fs_mount(char *fsName) {
+int fs_mount(const char *fsName) {
     int fd = open(fsName, O_RDWR);
     if (fd == -1) {
         printf("Error: Fail to open the file system %s.\n", fsName);
@@ -47,7 +52,7 @@ int fs_mount(char *fsName) {
     }
 
     #ifdef FS_DEBUG_INFO
-    printf("%s is mounted.\n", fsName);
+    printf("File system %s is mounted.\n", fsName);
     printf("FAT Spec:\n- Block size: %d\n- FAT region: %d-byte\n- Data region: %d-byte\n", fs_FATConfig->blockSize, fs_FATConfig->FATRegionSize, fs_FATConfig->dataRegionSize);
     #endif
 
@@ -72,7 +77,7 @@ int fs_unmount() {
     return FS_SUCCESS;
 }
 
-int fs_touch(char *fileName) {
+int fs_touch(const char *fileName) {
     if ((fs_FATConfig == NULL) || (fs_FAT16InMemory == NULL)) {
         printf("Error: No mounted file system.\n");
         return FS_FAILURE;
@@ -113,7 +118,7 @@ int fs_touch(char *fileName) {
     return res;
 }
 
-int fs_rm(char *fileName) {
+int fs_rm(const char *fileName) {
     if ((fs_FATConfig == NULL) || (fs_FAT16InMemory == NULL)) {
         printf("Error: No mounted file system.\n");
         return FS_FAILURE;
@@ -138,7 +143,52 @@ int fs_rm(char *fileName) {
     return res;
 }
 
-int fs_mv(char *src, char *dst) {
+int fs_mv(const char *src, const char *dst) {
+    if ((fs_FATConfig == NULL) || (fs_FAT16InMemory == NULL)) {
+        printf("Error: No mounted file system.\n");
+        return FS_FAILURE;
+    }
+
+    if ((strlen(src) > MAX_FILE_NAME_LENGTH)) {
+        printf("Error: Invalid filename %s.\n", src);
+        return FS_FAILURE;
+    }
+
+    if (strlen(dst) > MAX_FILE_NAME_LENGTH) {
+        printf("Error: Invalid filename %s.\n", dst);
+        return FS_FAILURE;
+    }
+
+    int directoryEntryOffset = findFileDirectory(fs_FATConfig, fs_FAT16InMemory, src);
+    if (directoryEntryOffset == FS_NOT_FOUND) {
+        printf("Error: Fail to move %s. No such file.\n", src);
+        return FS_FAILURE;
+    }
+
+    if (strcmp(src, dst) == 0) {
+        return FS_SUCCESS;
+    }
+
+    /* Remove dst from FAT. */
+    deleteFileDirectory(fs_FATConfig, fs_FAT16InMemory, dst);
+
+    char buffer[MAX_FILE_NAME_LENGTH];
+    memset(buffer, '\0', MAX_FILE_NAME_LENGTH);
+    strcpy(buffer, dst);
+
+    int fd = open(fs_FATConfig->name, O_WRONLY);
+    lseek(fd, directoryEntryOffset, SEEK_SET);
+    write(fd, buffer, sizeof(char) * MAX_FILE_NAME_LENGTH);
+    close(fd);
+
+    #ifdef FS_DEBUG_INFO
+    printf("File %s is moved to %s", src, dst);
+    #endif
+
+    return FS_SUCCESS;
+}
+
+int fs_cp(const char *src, const char *dst) {
     if ((fs_FATConfig == NULL) || (fs_FAT16InMemory == NULL)) {
         printf("Error: No mounted file system.\n");
         return FS_FAILURE;
@@ -154,32 +204,59 @@ int fs_mv(char *src, char *dst) {
         return FS_FAILURE;
     }
 
-    int offset = findFileDirectory(fs_FATConfig, fs_FAT16InMemory, src);
-    if (offset == FS_NOT_FOUND) {
-        printf("Error: Fail to move %s. No such file.\n", src);
+    int srcDirectoryEntryOffset = findFileDirectory(fs_FATConfig, fs_FAT16InMemory, src);
+    if (srcDirectoryEntryOffset == FS_NOT_FOUND) {
+        printf("Error: Fail to copy %s. No such file.\n", src);
         return FS_FAILURE;
+    }
+
+    if (strcmp(src, dst) == 0) {
+        return FS_SUCCESS;
     }
 
     /* Remove dst from FAT. */
     deleteFileDirectory(fs_FATConfig, fs_FAT16InMemory, dst);
+    int dstDirectoryEntryOffset = fs_touch(dst);
 
-    char buffer[MAX_FILE_NAME_LENGTH];
-    memset(buffer, '\0', MAX_FILE_NAME_LENGTH);
-    strcpy(buffer, dst);
+    DirectoryEntry srcDir;
+    readDirectoryEntry(fs_FATConfig, srcDirectoryEntryOffset, &srcDir);
 
-    int fd = open(fs_FATConfig->name, O_WRONLY);
-    lseek(fd, offset, SEEK_SET);
-    write(fd, buffer, sizeof(char) * MAX_FILE_NAME_LENGTH);
-    close(fd);
+    DirectoryEntry dstDir;
+    readDirectoryEntry(fs_FATConfig, dstDirectoryEntryOffset, &dstDir);
+
+    int byteToWrite = srcDir.size;
+
+    if (byteToWrite != 0) {
+        int srcStartBlock = srcDir.firstBlock;
+        int dstStartBlock = findEmptyFAT16Entry(fs_FATConfig, fs_FAT16InMemory);
+        if (dstStartBlock == FS_NOT_FOUND) {
+            printf("Error: Fail to copy %s. No empty data block.\n", src);
+            return FS_FAILURE;
+        }
+
+        char buffer[byteToWrite];
+        fs_readFAT(srcStartBlock, 0, byteToWrite, buffer);
+        int res = fs_writeFAT(dstStartBlock, 0, byteToWrite, buffer);
+
+        dstDir.firstBlock = dstStartBlock;
+        dstDir.size = res;
+        dstDir.mtime = time(NULL);
+        writeFileDirectory(fs_FATConfig, dstDirectoryEntryOffset, &dstDir);
+
+        if (res < byteToWrite) {
+            printf("Error: Fail to copy entire %s. No enough space.\n", src);
+            return FS_FAILURE;
+        }
+    }
 
     #ifdef FS_DEBUG_INFO
-    printf("File %s is moved to %s", src, dst);
+    printf("File %s is copied to %s.\n", src, dst);
     #endif
 
     return FS_SUCCESS;
 }
 
-int fs_read(int startBlock, int startBlockOffset, int size, char *buffer) {
+int fs_readFAT(int startBlock, int startBlockOffset, int size, char *buffer) {
     if ((fs_FATConfig == NULL) || (fs_FAT16InMemory == NULL)) {
         printf("Error: No mounted file system.\n");
         return FS_FAILURE;
@@ -203,7 +280,7 @@ int fs_read(int startBlock, int startBlockOffset, int size, char *buffer) {
     return readFAT(fs_FATConfig, fs_FAT16InMemory, startBlock, startBlockOffset, size, buffer);
 }
 
-int fs_write(int startBlock, int startBlockOffset, int size, char *buffer) {
+int fs_writeFAT(int startBlock, int startBlockOffset, int size, char *buffer) {
     if ((fs_FATConfig == NULL) || (fs_FAT16InMemory == NULL)) {
         printf("Error: No mounted file system.\n");
         return FS_FAILURE;

@@ -50,6 +50,4 @@ pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);     // Find the element 
 
 int pick_priority();        // Randomly pick a queue from ready queue based on the priority
 
-void queue_init(pcb_queue** queue);
-
 #endif

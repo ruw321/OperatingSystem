@@ -170,10 +170,12 @@ int main(int argc, char const *argv[])
         perror("error with initializing kernel level\n");
     }
 
-    // TODO: create multiple random process
-    pcb_t* pcb = k_process_create(random_process);
+    // TODO: instead of active_process, create multiple random process
+    // and add it to the queue
+    pcb* newPCB = k_process_create(active_process);
+    pcb_node newNode = {newPCB, NULL};
     // add this process to the process queue
-    pcb_list_add_to_tail(all_process_queue, pcb);
+    enqueue(ready_queue->mid, &newNode);
 
     scheduler_init();
 

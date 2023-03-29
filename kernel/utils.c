@@ -128,16 +128,3 @@ int pick_priority() {
         return HIGH;
     }
 }
-
-void queue_init(pcb_queue** queue) {
-    (*queue) = malloc(sizeof(pcb_queue));
-    memset(*queue, 0, sizeof(pcb_queue));
-    (*queue)->head = malloc(sizeof(pcb_node));
-    (*queue)->tail = malloc(sizeof(pcb_node));
-    (*queue)->head->pcb = NULL;
-    (*queue)->tail->pcb = NULL;
-    (*queue)->head->prev = NULL;
-    (*queue)->head->next = (*l)->tail;
-    (*queue)->tail->prev = (*l)->head;
-    (*queue)->tail->next = NULL;
-}

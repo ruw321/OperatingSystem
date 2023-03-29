@@ -1,28 +1,27 @@
+#include "kernel.h"
 
 pcb* k_process_create(pcb * parent) {
-    pcb* pcb = (pcb *)malloc(sizeof(pcb));
-    memset(pcb, 0, sizeof(pcb));
-    pcb->ucontext = parent->ucontext; 
-    pcb->pid = lastPID; 
+    pcb* new_pcb = (pcb *)malloc(sizeof(pcb));
+    memset(new_pcb, 0, sizeof(pcb));
+    new_pcb->ucontext = parent->ucontext; 
+    new_pcb->pid = lastPID; 
     lastPID++; 
-    pcb->ppid = parent->pid;
+    new_pcb->ppid = parent->pid;
 
-    pcb->priority = 0; // default priority is 0
-    pcb->state = READY; // initial state is ready, and should be pushed to ready queue later 
-    return pcb;
+    // new_pcb->priority = 0; // default priority is 0
+    new_pcb->state = READY; // initial state is ready, and should be pushed to ready queue later 
+    return new_pcb;
 }
 
 int kernel_init() {
     // initialize ready queue
-    priorityQueue = malloc(sizeof(priority_queue));
-    if (priorityQueue == NULL) {
-        perror("error mallocing for priority queue");
+    ready_queue = new_priority_queue();
+
+    if (ready_queue == NULL) {
+        perror("error initializing the priority queue");
         return FAILURE;
     }
-    queue_init(&ready_queue->high);
-    queue_init(&ready_queue->middle);
-    queue_init(&ready_queue->low);
 
-    lastPID = 1
+    lastPID = 1;
     return SUCCESS;
 }

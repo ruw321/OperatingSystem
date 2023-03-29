@@ -117,10 +117,12 @@ pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid) {
 
 
 int pick_priority() {
-    srand(time(NULL));
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts); // Get current time
+    // Seed random number generator with XOR of sec and nsec fields
+    srand(ts.tv_nsec ^ ts.tv_sec); 
     // The ratio of low:mid:high should be 4:6:9. Thus, random generate a int from 1 to 19 and use it to decide which queue to use
-    // int upper = 19, lower = 1;
-    int num = rand() % 19;
+    int num = rand() % 18;  // generate a random number between 0 and 18
     printf("num: %i\n", num);
     if (num <= 3) {
         return LOW;

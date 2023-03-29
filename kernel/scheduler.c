@@ -1,19 +1,30 @@
 #include "scheduler.h"
 
-int make_scheduler_context() {
-    if (getcontext(&scheduler_context) == -1) {
-        perror("Error in getcontext(scheduler_context)\n");
-        return -1;
-    }
+static pcb* idle_process;
 
-    sigemptyset(&(scheduler_context.uc_sigmask));
-    set_stack(&(scheduler_context.uc_stack));
-    scheduler_context.uc_link = NULL;
+void set_stack(stack_t *stack)
+{
+    void *sp = malloc(SIGSTKSZ);
+    VALGRIND_STACK_REGISTER(sp, sp + SIGSTKSZ);
 
-    makecontext(&scheduler_context, scheduler, 0);
-    return 0;
+    *stack = (stack_t) { .ss_sp = sp, .ss_size = SIGSTKSZ };
 }
 
+int makeContext(ucontext_t *ucp,  void (*func)()) {
+    // intialize the context
+    if (getcontext(ucp) == -1) {
+        perror("Error in getcontext(context)\n");
+        return FAILURE;
+    }
+
+    sigemptyset(&ucp->uc_sigmask);
+    set_stack(&ucp->uc_stack);
+    ucp->uc_link = NULL;
+
+    // set up the stack and instruction pointer for the context
+    makecontext(ucp, func, 0);
+    return SUCCESS;
+}
 
 int set_alarm_handler() {
     struct sigaction act;
@@ -32,27 +43,31 @@ int set_alarm_handler() {
 
 void alarm_handler(int signum)
 {
-    // TODO: add logic fir sleep command
+    // TODO: add logic for sleep command
     swapcontext(p_active_context, &scheduler_context);
 }
 
 
-void set_timer(void)
+int set_timer(void)
 {
     struct itimerval it;
 
     it.it_interval = (struct timeval){.tv_usec = TICK};
     it.it_value = it.it_interval;
 
-    setitimer(ITIMER_REAL, &it, NULL);
+    // schedule a SIGALRM signal to be delivered
+    if (setitimer(ITIMER_REAL, &it, NULL) == -1) {
+        return FAILURE;
+    }
+    return SUCCESS;
 }
 
 
 pcb* next_process() {
     if (is_priority_queue_empty(ready_queue)) {
-        // TODO: Change to idle process
-        return NULL;
+        return idle_process;
     }
+
     pcb_queue* chosen_queue;
     while(true) {
         int proposal = pick_priority();
@@ -73,10 +88,86 @@ pcb* next_process() {
     return next_node->pcb;
 }
 
-void scheduler() {
-    //TODO: do necessary clean up
 
+void scheduler() {
+    p_active_context = &scheduler_context;
+
+    //TODO: block sigalrm
+    
     active_process = next_process();
     p_active_context = &active_process->ucontext;
     setcontext(p_active_context);
+}
+
+
+int scheduler_init() {
+
+    printf("Initializing scheduler\n");
+
+    // initialize context for the scheduler 
+    if (makeContext(&scheduler_context, scheduler) == FAILURE) {
+        return FAILURE;
+    }
+
+    printf("initialized context for the scheduler \n");
+
+    // catch the SIGALRM signal
+    if (set_alarm_handler() == FAILURE) {
+        return FAILURE;
+    }
+
+    printf("set the SIGALRM signal handler\n");
+
+    // schedule a SIGALRM signal to your OS every 100 milliseconds
+    if (set_timer() == FAILURE) {
+        return FAILURE;
+    }
+
+    printf("set the timer\n");
+
+    // initialize the idle process
+    if (idle_process_init() == FAILURE) {
+        return FAILURE;
+    }
+
+    printf("initialized idle process\n");
+
+    return SUCCESS;
+}
+
+
+// suspend the idle process until a signal is delivered to it
+void idle_func() {
+    sigset_t mask;
+    // initializes the signal mask to be an empty set
+    if (sigemptyset(&mask) == -1) {
+        perror("Failed to initialize signal mask in idle_func");
+        return;
+    }
+    sigsuspend(&mask);
+}
+
+
+int idle_process_init() {
+    //malloc space and initialize attributes
+    idle_process = malloc(sizeof(pcb));
+    if (makeContext(&idle_process->ucontext, idle_func) == -1) {
+        return FAILURE;
+    }
+    idle_process->pid = 0;
+    idle_process->ppid = 0;
+    idle_process->state = READY;
+
+    return SUCCESS;
+}
+
+
+int main(int argc, char const *argv[])
+{
+    // TODO: test the scheduler 
+    scheduler_init();
+
+    swapcontext(&main_context, &scheduler_context);
+
+    return 0;
 }

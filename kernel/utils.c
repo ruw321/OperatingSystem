@@ -116,14 +116,6 @@ pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid) {
 }
 
 
-void set_stack(stack_t *stack) {
-    void *sp = malloc(SIGSTKSZ);
-    VALGRIND_STACK_REGISTER(sp, sp + SIGSTKSZ);
-
-    *stack = (stack_t) { .ss_sp = sp, .ss_size = SIGSTKSZ };
-}
-
-
 int pick_priority() {
     // The ratio of low:mid:high should be 4:6:9. Thus, random generate a int from 1 to 19 and use it to decide which queue to use
     int upper = 19, lower = 1;

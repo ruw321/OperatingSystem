@@ -11,6 +11,7 @@
 
 #include "utils.h"
 #include "global.h"
+#include "kernel.h"
 
 extern pcb* active_process;
 

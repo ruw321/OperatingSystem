@@ -93,8 +93,9 @@ void scheduler() {
     p_active_context = &scheduler_context;
 
     //TODO: block sigalrm
-    
+
     active_process = next_process();
+    printf("next selected process id: %i", active_process->pid);
     p_active_context = &active_process->ucontext;
     setcontext(p_active_context);
 }
@@ -164,7 +165,16 @@ int idle_process_init() {
 
 int main(int argc, char const *argv[])
 {
-    // TODO: test the scheduler 
+    // initialize process queue
+    if (kernel_init() == -1) {
+        perror("error with initializing kernel level\n");
+    }
+
+    // TODO: create multiple random process
+    pcb_t* pcb = k_process_create(random_process);
+    // add this process to the process queue
+    pcb_list_add_to_tail(all_process_queue, pcb);
+
     scheduler_init();
 
     swapcontext(&main_context, &scheduler_context);

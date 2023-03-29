@@ -71,6 +71,7 @@ pcb* next_process() {
     pcb_queue* chosen_queue;
     while(true) {
         int proposal = pick_priority();
+        printf("priority in proposal is: %i\n", proposal);
         if (proposal == HIGH && !is_empty(ready_queue->high)) {
             chosen_queue = ready_queue->high;
             break;
@@ -162,6 +163,17 @@ int idle_process_init() {
     return SUCCESS;
 }
 
+void foo() {
+    printf("In foo\n");
+}
+
+void foo2() {
+    printf("In foo2\n");
+}
+
+void bar() {
+    printf("In bar\n");
+}
 
 int main(int argc, char const *argv[])
 {
@@ -170,12 +182,46 @@ int main(int argc, char const *argv[])
         perror("error with initializing kernel level\n");
     }
 
-    // TODO: instead of active_process, create multiple random process
-    // and add it to the queue
-    pcb* newPCB = k_process_create(active_process);
-    pcb_node newNode = {newPCB, NULL};
+    ucontext_t ctx1, ctx2, ctx3;
+    char stack1[8192], stack2[8192];
+    // Initialize context 1
+    getcontext(&ctx1);
+    ctx1.uc_stack.ss_sp = stack1;
+    ctx1.uc_stack.ss_size = sizeof(stack1);
+    ctx1.uc_link = NULL;
+    makecontext(&ctx1, foo, 0);
+
+    // Initialize context 2
+    getcontext(&ctx2);
+    ctx2.uc_stack.ss_sp = stack2;
+    ctx2.uc_stack.ss_size = sizeof(stack2);
+    ctx2.uc_link = NULL;
+    makecontext(&ctx2, bar, 0);
+
+    // // Initialize context 3
+    // getcontext(&ctx3);
+    // ctx2.uc_stack.ss_sp = stack1;
+    // ctx2.uc_stack.ss_size = sizeof(stack1);
+    // ctx2.uc_link = &ctx1;
+    // makecontext(&ctx2, bar, 0);
+
+    pcb* newPCB = (pcb *) malloc(sizeof(pcb));
+    newPCB->ucontext = ctx1;
+    newPCB->state = READY;
+    pcb_node* newNode = (pcb_node *) malloc(sizeof(pcb_node));
+    newNode->pcb = newPCB;
+    newNode->next = NULL;
+
+    pcb* newPCB2 = (pcb *) malloc(sizeof(pcb));
+    newPCB2->ucontext = ctx2;
+    newPCB2->state = READY;
+    pcb_node* newNode2 = (pcb_node *) malloc(sizeof(pcb_node));
+    newNode2->pcb = newPCB2;
+    newNode2->next = NULL;
+
     // add this process to the process queue
-    enqueue(ready_queue->mid, &newNode);
+    enqueue(ready_queue->mid, newNode);
+    enqueue(ready_queue->low, newNode2);
 
     scheduler_init();
 

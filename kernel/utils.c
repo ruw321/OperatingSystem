@@ -117,12 +117,14 @@ pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid) {
 
 
 int pick_priority() {
+    srand(time(NULL));
     // The ratio of low:mid:high should be 4:6:9. Thus, random generate a int from 1 to 19 and use it to decide which queue to use
-    int upper = 19, lower = 1;
-    int num = rand() % (upper - lower + 1) + lower;
-    if (num <= 4) {
+    // int upper = 19, lower = 1;
+    int num = rand() % 19;
+    printf("num: %i\n", num);
+    if (num <= 3) {
         return LOW;
-    } else if (num <= 10) {
+    } else if (num <= 9) {
         return MID;
     } else {
         return HIGH;

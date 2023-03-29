@@ -5,7 +5,7 @@ CC = clang
 CFLAGS = -Wall
 
 TOPDIR = $(PWD)
-LOGFILE = \"$(TOPDIR)/log/log.txt\"
+# LOGFILE = \"$(TOPDIR)/log/log.txt\"
 override CPPFLAGS += -DLOGFILE=$(LOGFILE)
 
 SRCS = $(filter-out main.c, $(wildcard *.c))

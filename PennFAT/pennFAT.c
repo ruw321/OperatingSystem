@@ -88,6 +88,10 @@ int pf_mkfs(const char *fsName, int BLOCKS_IN_FAT, int BLOCK_SIZE_CONFIG) {
 }
 
 int pf_mount(const char *fsName) {
+    if (pf_isMounted()) {
+        fs_unmount();
+    }
+
     return fs_mount(fsName);
 }
 
@@ -294,7 +298,6 @@ int parseInput(char *userInput, char **argsBuffer, int *argNum) {
     return EXECUTE_COMMAND;
 }
 
-
 int main(int argc, char **argv) {
     printf("PennFAT is running... Ctrl+D to exit.\n");
     signal(SIGINT, SIGINTHandler);
@@ -333,7 +336,7 @@ int main(int argc, char **argv) {
                     pf_umount();
                 }
             } else if (strcmp(argsBuffer[0], "touch") == 0) {
-                if ((argNum < 2) || (argNum > PF_MAX_FILE_NUM)) {
+                if ((argNum < 2) || (argNum > PF_MAX_FILE_NUM + 1)) {
                     printf("Error: Invalid Command\n");
                 } else {
                     int flag = 0;

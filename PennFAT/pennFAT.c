@@ -237,6 +237,9 @@ int pf_catFiles(char **fileNames, int fileNum, int *size, char *buffer) {
     }
 
     *size = byteRead;
+    #ifdef FS_DEBUG_INFO
+    printf("pf_catFile() read %d bytes.\n", byteRead);
+    #endif
 
     return 0;
 }
@@ -425,6 +428,7 @@ int main(int argc, char **argv) {
                     }
 
                     char buffer[PF_MAX_BUFFER_SIZE];
+                    memset(buffer, 0, PF_MAX_BUFFER_SIZE);
                     int size = 0;
                     char *fileNames[PF_MAX_FILE_NUM];
                     for (int i = 1; i < argNum; i++) {
@@ -461,6 +465,8 @@ int main(int argc, char **argv) {
                         }
 
                         char buffer[PF_MAX_BUFFER_SIZE];
+                        memset(buffer, 0 , PF_MAX_BUFFER_SIZE);
+
                         int size = 0;
                         char *fileNames[PF_MAX_FILE_NUM];
                         for (int i = 1; i < argNum - 2; i++) {
@@ -483,6 +489,7 @@ int main(int argc, char **argv) {
 
                     } else { // read from terminal 
                         char buffer[PF_MAX_BUFFER_SIZE];
+                        memset(buffer, 0 , PF_MAX_BUFFER_SIZE);
                         int size = read(STDIN_FILENO, buffer, PF_MAX_BUFFER_SIZE);
                         pf_writeFile(argsBuffer[argNum-1], size, buffer, mode);
                     }
@@ -541,6 +548,7 @@ int main(int argc, char **argv) {
                         }
 
                         char buffer[PF_MAX_BUFFER_SIZE];
+                        memset(buffer, 0 , PF_MAX_BUFFER_SIZE);
                         int size = read(srcFd, buffer, PF_MAX_BUFFER_SIZE);
                         close(srcFd);
                         pf_writeFile(dst, size, buffer, PF_OVERWRITE);
@@ -558,6 +566,7 @@ int main(int argc, char **argv) {
                             continue;
                         }
                         char buffer[PF_MAX_BUFFER_SIZE];
+                        memset(buffer, 0 , PF_MAX_BUFFER_SIZE);
                         int size = pf_readFile(src, PF_MAX_BUFFER_SIZE, buffer);
                         write(dstFd, buffer, size);
                         close(dstFd);

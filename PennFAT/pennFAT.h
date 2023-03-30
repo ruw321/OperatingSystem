@@ -40,8 +40,6 @@ int pf_chmod(const char *fileName, uint8_t perm);
 
 int pf_catFiles(char **fileNames, int fileNum, int *size, char *buffer);
 
-int pf_cp();
-
 
 #define MAX_LINE_LENGTH 4096
 #define MAX_ARGS_NUM 8

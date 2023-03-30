@@ -43,7 +43,7 @@ bool is_priority_queue_empty(priority_queue* ready_queue) {
 }
 
 pcb_queue* get_pcb_queue_by_priority(priority_queue* ready_queue, int priority) {
-    pcb_queue* queue;
+    pcb_queue* queue=NULL;
     if (priority == HIGH) {
         queue = ready_queue->high;
     } else if (priority == MID) {

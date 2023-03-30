@@ -46,6 +46,8 @@ priority_queue* new_priority_queue();   // Create an empty priority queue
 bool is_empty(pcb_queue* queue);     // Check if the queue is empty
 bool is_priority_queue_empty(priority_queue* ready_queue);
 
+pcb_queue* get_pcb_queue_by_priority(priority_queue* ready_queue, int priority);    // return the pointer to the pcb_queue of the required priority
+
 void enqueue(pcb_queue* queue, pcb_node* node);     // Enqueue a new element to the queue
 void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* node);
 int dequeue_by_pid(pcb_queue* queue, pid_t pid);    // Dequeue the element with pid from the queue

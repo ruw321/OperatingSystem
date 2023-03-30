@@ -32,3 +32,31 @@ int kernel_init() {
     lastPID = 1;
     return SUCCESS;
 }
+
+int k_process_kill(pcb *process, int signal) {
+    if (process->pid == 1) {
+        perror("Should not kill shell\n");
+        return FAILURE;
+    }
+
+    if (signal == S_SIGSTOP) {
+        process->state = STOPPED;
+
+        pcb_queue* cur_queue = get_pcb_queue_by_priority(process->priority);
+        dequeue_by_pid(cur_queue, process->pid) == FAILURE);
+        // TODO: if proc is fg, unblock its parent?
+    } else if (signal == S_SIGCONT) {
+        // TODO: special case for sleep
+        if (process->state == STOPPED) {
+            process->state = READY;
+            enqueue_by_priority(ready_queue, process->priority, process);
+        }
+    } else if (signal == S_SIGTERM) {
+        process->state = TERMINATED;
+
+        pcb_queue* cur_queue = get_pcb_queue_by_priority(process->priority);
+        dequeue_by_pid(cur_queue, process->pid) == FAILURE);
+        // TODO: if proc is fg, unblock its parent?
+        // TODO: remove from its parent's children and add to zombies
+    }
+}

@@ -42,6 +42,17 @@ bool is_priority_queue_empty(priority_queue* ready_queue) {
     return is_empty(ready_queue->high) && is_empty(ready_queue->mid) && is_empty(ready_queue->low);
 }
 
+pcb_queue* get_pcb_queue_by_priority(priority_queue* ready_queue, int priority) {
+    pcb_queue* queue;
+    if (priority == HIGH) {
+        queue = ready_queue->high;
+    } else if (priority == MID) {
+        queue = ready_queue->mid;
+    } else if (priority == LOW) { 
+        queue = ready_queue->low;
+    }
+    return queue;
+}
 
 void enqueue(pcb_queue* queue, pcb_node* node) {
     if (is_empty(queue)) {
@@ -54,13 +65,8 @@ void enqueue(pcb_queue* queue, pcb_node* node) {
 }     
 
 void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* node) {
-    if (priority == HIGH) {
-        enqueue(ready_queue->high, node);
-    } else if (priority == MID) {
-        enqueue(ready_queue->mid, node);
-    } else if (priority == LOW) { 
-        enqueue(ready_queue->low, node);
-    }
+    pcb_queue* queue = get_pcb_queue_by_priority(ready_queue, priority);
+    enqueue(queue, node);
 }
 
 
@@ -102,6 +108,8 @@ int dequeue_front(pcb_queue* queue) {
         return -1;
     }
 
+    pcb_node* current = queue->head;
+
     if (queue->head == queue->tail) {
         // only one node in the queue
         queue->head = NULL;
@@ -110,19 +118,14 @@ int dequeue_front(pcb_queue* queue) {
         queue->head = queue->head->next;
     }
 
+    free(current);
     return 0;
 }
 
 
 int dequeue_front_by_priority(priority_queue* ready_queue, int priority) {
-    if (priority == HIGH) {
-        return dequeue_front(ready_queue->high);
-    } else if (priority == MID) {
-        return dequeue_front(ready_queue->mid);
-    } else if (priority == LOW) { 
-        return dequeue_front(ready_queue->low);
-    }
-    return -1;
+    pcb_queue* queue = get_pcb_queue_by_priority(ready_queue, priority);
+    return dequeue_front(queue);
 }
 
 

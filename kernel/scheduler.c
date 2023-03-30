@@ -97,9 +97,7 @@ void scheduler() {
     // make sure the current context is not the scheduler context and ready queue is not empty
     if (p_active_context != NULL && !is_priority_queue_empty(ready_queue) && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0) {
         dequeue_front_by_priority(ready_queue, active_process->priority);
-        pcb_node* currNode = (pcb_node *) malloc(sizeof(pcb_node));
-        currNode->pcb = active_process;
-        currNode->next = NULL;
+        pcb_node* currNode = new_pcb_node(active_process);
         // check how the previous process ended
         if (stopped_by_timer) {
             printf("process is stopped by the timer\n");

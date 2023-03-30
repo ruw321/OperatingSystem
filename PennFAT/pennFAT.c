@@ -345,7 +345,7 @@ int main(int argc, char **argv) {
                     int flag = 0;
                     for (int i = 1; i < argNum; i++) {
                         if (strlen(argsBuffer[i]) > MAX_FILE_NAME_LENGTH) {
-                            printf("Error: Invalid File Name\n");
+                            printf("Error: Invalid File Name %s\n", argsBuffer[i]);
                             flag = 1;
                             break;
                         }
@@ -367,13 +367,21 @@ int main(int argc, char **argv) {
                     }
                 }
             } else if (strcmp(argsBuffer[0], "rm") == 0) {
-                if (argNum != 2 ) {
+                if (argNum - 1 > PF_MAX_FILE_NUM ) {
                     printf("Error: Invalid Command\n");
                 } else {
-                    if (strlen(argsBuffer[1]) > MAX_FILE_NAME_LENGTH) {
-                        printf("Error: Invalid File Name\n");
-                    } else {
-                        pf_rm(argsBuffer[1]);
+                    int invalid = 0;
+                    for (int i = 1; i < argNum; i++) {
+                        if (strlen(argsBuffer[i]) > MAX_FILE_NAME_LENGTH) {
+                            printf("Error: Invalid File Name %s\n", argsBuffer[i]);
+                            invalid = 1;
+                            break;
+                        }
+                    }
+                    if (invalid != 1) {
+                        for (int i = 1; i < argNum; i++) {
+                            pf_rm(argsBuffer[i]);
+                        }
                     }
                 }
             } else if (strcmp(argsBuffer[0], "ls") == 0) {

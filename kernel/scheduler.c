@@ -111,6 +111,7 @@ void scheduler() {
             // process completed
             printf("process is finished (not stopped by the timer)\n");
             active_process->state = COMPLETED;
+            //TODO: check whether its exited normally or by signal 
             if (true) {
                 enqueue(exited_queue, currNode);
             } else {

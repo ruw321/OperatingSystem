@@ -1,7 +1,7 @@
 // Works as a wrapper to the kernel functions so that users can use these functions
 
 /**
-* forksanew thread that retains most of the attributes of the parent thread (see k_process_create).
+* forks a new thread that retains most of the attributes of the parent thread (see k_process_create).
 **/
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1);
 

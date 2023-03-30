@@ -1,0 +1,89 @@
+Reading package lists...
+Building dependency tree...
+Reading state information...
+expect is already the newest version (5.45.4-2build1).
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+PennFAT is running... Ctrl+D to exit.
+File system move_copy is created.
+FAT Spec:
+- Block size: 256
+- FAT region: 256-byte
+- Data region: 32512-byte
+running move testcase
+spawn ../pennfat
+PennFAT is running... Ctrl+D to exit.
+mount move_copy
+File system move_copy is mounted.
+FAT Spec:
+- Block size: 256
+- FAT region: 256-byte
+- Data region: 32512-byte
+touch file1 file2 file3 file4
+File directory of file1 does not exist.
+Empty file file1 is created.
+File directory of file2 does not exist.
+Empty file file2 is created.
+File directory of file3 does not exist.
+Empty file file3 is created.
+File directory of file4 does not exist.
+Empty file file4 is created.
+mv file4 file0
+File directory of file4 is found.
+File directory of file0 does not exist.
+Warning: No such file directory file0 to delete.
+mv file0 file9
+File file4 is moved to file0File directory of file0 is found.
+File directory of file9 does not exist.
+Warning: No such file directory file9 to delete.
+mv file1 file2
+File file0 is moved to file9File directory of file1 is found.
+File directory of file2 is found.
+File file2 is an empty file. No block to release.
+
+File file1 is moved to file2
+move_copy is unmounted.
+running copy testcase
+spawn ../pennfat
+PennFAT is running... Ctrl+D to exit.
+mount move_copy
+File system move_copy is mounted.
+FAT Spec:
+- Block size: 256
+- FAT region: 256-byte
+- Data region: 32512-byte
+cp file9 file4
+File directory of file9 is found.
+File directory of file4 does not exist.
+Warning: No such file directory file4 to delete.
+File directory of file4 does not exist.
+Empty file file4 is created.
+File file9 is copied to file4.
+cp file9 file9
+File directory of file9 is found.
+cp -h test_copy_file copied_from_host
+File directory of copied_from_host does not exist.
+File directory of copied_from_host does not exist.
+Claim a new directory block with idx = 2
+Empty file copied_from_host is created.
+Write 31 bytes to block 3 with offset 0.
+Successfully write 31 bytes.
+cp copied_from_host -h copy_to_host
+Error: Fail to open copy_to_host on host OS
+cp -h copy_to_host copied_from_host
+File directory of copied_from_host is found.
+File directory of copied_from_host is found.
+Block 3 is released.
+File directory copied_from_host is deleted from FAT.
+File directory of copied_from_host does not exist.
+Empty file copied_from_host is created.
+Successfully write 0 bytes.
+cp copied -h copy_to_host
+Error: Fail to open copy_to_host on host OS
+cp -h copied copied_from_host
+Error: Fail to open copied on host OS
+rm copy_to_host
+File directory of copy_to_host does not exist.
+Error: Fail to remove copy_to_host. No such file.
+
+
+move_copy is unmounted.

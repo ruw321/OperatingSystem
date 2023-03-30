@@ -14,14 +14,14 @@
 #include "kernel.h"
 
 extern pcb* active_process;
-
 extern priority_queue* ready_queue;
-
 extern ucontext_t main_context;
-
 extern ucontext_t scheduler_context;
-
 extern ucontext_t* p_active_context;
+extern bool stopped_by_timer;
+extern pcb_queue* exited_queue;
+extern pcb_queue* stopped_queue;
+extern pcb_queue* signaled_queue;
 
 #define TICK 100000     // 1 tick = 100 milliseconds
 

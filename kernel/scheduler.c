@@ -44,6 +44,9 @@ int set_alarm_handler() {
 void alarm_handler(int signum)
 {
     // TODO: add logic for sleep command
+    printf("triggered the alarm\n");
+    stopped_by_timer = true;
+
     swapcontext(p_active_context, &scheduler_context);
 }
 
@@ -64,6 +67,7 @@ int set_timer(void)
 
 
 pcb* next_process() {
+    printf("choosing the next process\n");
     if (is_priority_queue_empty(ready_queue)) {
         return idle_process;
     }
@@ -85,18 +89,40 @@ pcb* next_process() {
     }
 
     pcb_node* next_node = chosen_queue->head;
-    dequeue_front(chosen_queue);
     return next_node->pcb;
 }
 
 
 void scheduler() {
+    // make sure the current context is not the scheduler context and ready queue is not empty
+    if (p_active_context != NULL && !is_priority_queue_empty(ready_queue) && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0) {
+        dequeue_front_by_priority(ready_queue, active_process->priority);
+        pcb_node* currNode = (pcb_node *) malloc(sizeof(pcb_node));
+        currNode->pcb = active_process;
+        currNode->next = NULL;
+        // check how the previous process ended
+        if (stopped_by_timer) {
+            printf("process is stopped by the timer\n");
+            active_process->state = BLOCKED;
+            // since the process hasn't completed yet, we add it back to the ready queue
+            enqueue_by_priority(ready_queue, active_process->priority, currNode);
+            stopped_by_timer = false;
+        } else {
+            // process completed
+            printf("process is finished (not stopped by the timer)\n");
+            active_process->state = COMPLETED;
+            if (true) {
+                enqueue(exited_queue, currNode);
+            } else {
+                // stopped by signal
+                enqueue(signaled_queue, currNode);
+            }
+        }
+    }
+
     p_active_context = &scheduler_context;
-
-    //TODO: block sigalrm
-
     active_process = next_process();
-    printf("next selected process id: %i", active_process->pid);
+    printf("next selected process id: %i\n", active_process->pid);
     p_active_context = &active_process->ucontext;
     setcontext(p_active_context);
 }
@@ -165,6 +191,8 @@ int idle_process_init() {
 
 void foo() {
     printf("In foo\n");
+    sleep(2);
+    printf("after sleep\n");
 }
 
 void foo2() {
@@ -181,21 +209,21 @@ int main(int argc, char const *argv[])
     if (kernel_init() == -1) {
         perror("error with initializing kernel level\n");
     }
-
-    ucontext_t ctx1, ctx2, ctx3;
+    printf("initializing context for testing\n");
+    ucontext_t ctx1, ctx2;
     char stack1[8192], stack2[8192];
     // Initialize context 1
     getcontext(&ctx1);
     ctx1.uc_stack.ss_sp = stack1;
     ctx1.uc_stack.ss_size = sizeof(stack1);
-    ctx1.uc_link = NULL;
+    ctx1.uc_link = &scheduler_context;
     makecontext(&ctx1, foo, 0);
 
     // Initialize context 2
     getcontext(&ctx2);
     ctx2.uc_stack.ss_sp = stack2;
     ctx2.uc_stack.ss_size = sizeof(stack2);
-    ctx2.uc_link = NULL;
+    ctx2.uc_link = &scheduler_context;
     makecontext(&ctx2, bar, 0);
 
     // // Initialize context 3
@@ -205,16 +233,21 @@ int main(int argc, char const *argv[])
     // ctx2.uc_link = &ctx1;
     // makecontext(&ctx2, bar, 0);
 
+    printf("initializing PCBs for testing\n");
     pcb* newPCB = (pcb *) malloc(sizeof(pcb));
     newPCB->ucontext = ctx1;
+    newPCB->pid = 1;
     newPCB->state = READY;
+    newPCB->priority = 0;
     pcb_node* newNode = (pcb_node *) malloc(sizeof(pcb_node));
     newNode->pcb = newPCB;
     newNode->next = NULL;
 
     pcb* newPCB2 = (pcb *) malloc(sizeof(pcb));
     newPCB2->ucontext = ctx2;
+    newPCB2->pid = 2;
     newPCB2->state = READY;
+    newPCB2->priority = 1;
     pcb_node* newNode2 = (pcb_node *) malloc(sizeof(pcb_node));
     newNode2->pcb = newPCB2;
     newNode2->next = NULL;
@@ -224,7 +257,6 @@ int main(int argc, char const *argv[])
     enqueue(ready_queue->low, newNode2);
 
     scheduler_init();
-
     swapcontext(&main_context, &scheduler_context);
 
     return 0;

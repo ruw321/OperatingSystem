@@ -11,6 +11,7 @@ enum process_state {
     STOPPED,
     ZOMBIED,
     ORPHANED,
+    COMPLETED,
 };
 
 #endif

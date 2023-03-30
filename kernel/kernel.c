@@ -17,6 +17,13 @@ int kernel_init() {
     // initialize ready queue
     ready_queue = new_priority_queue();
 
+    // initialize all the queues
+    exited_queue = new_pcb_queue();
+    stopped_queue = new_pcb_queue();
+    signaled_queue = new_pcb_queue();
+
+    stopped_by_timer = false;
+    
     if (ready_queue == NULL) {
         perror("error initializing the priority queue");
         return FAILURE;

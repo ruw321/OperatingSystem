@@ -53,6 +53,16 @@ void enqueue(pcb_queue* queue, pcb_node* node) {
     queue->tail = node;
 }     
 
+void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* node) {
+    if (priority == HIGH) {
+        enqueue(ready_queue->high, node);
+    } else if (priority == MID) {
+        enqueue(ready_queue->mid, node);
+    } else if (priority == LOW) { 
+        enqueue(ready_queue->low, node);
+    }
+}
+
 
 int dequeue_by_pid(pcb_queue* queue, pid_t pid) {
     if (is_empty(queue)) {
@@ -104,6 +114,18 @@ int dequeue_front(pcb_queue* queue) {
 }
 
 
+int dequeue_front_by_priority(priority_queue* ready_queue, int priority) {
+    if (priority == HIGH) {
+        return dequeue_front(ready_queue->high);
+    } else if (priority == MID) {
+        return dequeue_front(ready_queue->mid);
+    } else if (priority == LOW) { 
+        return dequeue_front(ready_queue->low);
+    }
+    return -1;
+}
+
+
 pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid) {
     pcb_node* current = queue->head;
     while (current != NULL) {
@@ -123,7 +145,6 @@ int pick_priority() {
     srand(ts.tv_nsec ^ ts.tv_sec); 
     // The ratio of low:mid:high should be 4:6:9. Thus, random generate a int from 1 to 19 and use it to decide which queue to use
     int num = rand() % 18;  // generate a random number between 0 and 18
-    printf("num: %i\n", num);
     if (num <= 3) {
         return LOW;
     } else if (num <= 9) {

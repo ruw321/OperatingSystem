@@ -16,6 +16,7 @@ typedef struct pcb {
     pid_t pid;
     pid_t ppid;     // parent pid
     enum process_state state;       // state of the process
+    int priority;
     // open file descriptors
     // TODO: other fields to be added
 } pcb;
@@ -45,8 +46,10 @@ bool is_empty(pcb_queue* queue);     // Check if the queue is empty
 bool is_priority_queue_empty(priority_queue* ready_queue);
 
 void enqueue(pcb_queue* queue, pcb_node* node);     // Enqueue a new element to the queue
+void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* node);
 int dequeue_by_pid(pcb_queue* queue, pid_t pid);    // Dequeue the element with pid from the queue
 int dequeue_front(pcb_queue* queue);      // Dequeue the first element from the queue
+int dequeue_front_by_priority(priority_queue* ready_queue, int priority);    // Dequeue the first element from the queue based on the priority
 pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);     // Find the element with pid from the queue
 
 int pick_priority();        // Randomly pick a queue from ready queue based on the priority

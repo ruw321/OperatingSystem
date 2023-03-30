@@ -17,7 +17,8 @@ typedef struct pcb {
     pid_t ppid;     // parent pid
     enum process_state state;       // state of the process
     int priority;
-    // open file descriptors
+    int input_fd;
+    int output_fd;
     // TODO: other fields to be added
 } pcb;
 
@@ -53,5 +54,9 @@ int dequeue_front_by_priority(priority_queue* ready_queue, int priority);    // 
 pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);     // Find the element with pid from the queue
 
 int pick_priority();        // Randomly pick a queue from ready queue based on the priority
+
+void set_stack(stack_t *stack);        // initialize stack for ucontext
+
+int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_context, char *argv[]); // initializing context
 
 #endif

@@ -25,8 +25,6 @@ extern pcb_queue* signaled_queue;
 
 #define TICK 100000     // 1 tick = 100 milliseconds
 
-void set_stack(stack_t *stack);        // initialize stack for ucontext
-
 int set_alarm_handler();    // register signal handler for SIGALARM
 void alarm_handler();       // The signal handler for SIGALARM
 int set_timer();   // set up time interval for SIGALARM

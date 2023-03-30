@@ -153,3 +153,35 @@ int pick_priority() {
         return HIGH;
     }
 }
+
+void set_stack(stack_t *stack)
+{
+    void *sp = malloc(SIGSTKSZ);
+    VALGRIND_STACK_REGISTER(sp, sp + SIGSTKSZ);
+
+    *stack = (stack_t) { .ss_sp = sp, .ss_size = SIGSTKSZ };
+}
+
+int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_context, char *argv[]) {
+    // intialize the context
+    if (getcontext(ucp) == -1) {
+        perror("Error in getcontext(context)\n");
+        return FAILURE;
+    }
+
+    sigemptyset(&ucp->uc_sigmask);
+    set_stack(&ucp->uc_stack);
+    if (next_context == NULL) {
+        ucp->uc_link = NULL;
+    } else {
+        ucp->uc_link = next_context;
+    }
+
+    // set up the stack and instruction pointer for the context
+    if (argv == NULL) {
+        makecontext(ucp, func, argc);
+    } else {
+        makecontext(ucp, func, argc, argv);
+    }
+    return SUCCESS;
+}

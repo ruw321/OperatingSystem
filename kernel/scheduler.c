@@ -2,30 +2,6 @@
 
 static pcb* idle_process;
 
-void set_stack(stack_t *stack)
-{
-    void *sp = malloc(SIGSTKSZ);
-    VALGRIND_STACK_REGISTER(sp, sp + SIGSTKSZ);
-
-    *stack = (stack_t) { .ss_sp = sp, .ss_size = SIGSTKSZ };
-}
-
-int makeContext(ucontext_t *ucp,  void (*func)()) {
-    // intialize the context
-    if (getcontext(ucp) == -1) {
-        perror("Error in getcontext(context)\n");
-        return FAILURE;
-    }
-
-    sigemptyset(&ucp->uc_sigmask);
-    set_stack(&ucp->uc_stack);
-    ucp->uc_link = NULL;
-
-    // set up the stack and instruction pointer for the context
-    makecontext(ucp, func, 0);
-    return SUCCESS;
-}
-
 int set_alarm_handler() {
     struct sigaction act;
 
@@ -134,7 +110,7 @@ int scheduler_init() {
     printf("Initializing scheduler\n");
 
     // initialize context for the scheduler 
-    if (makeContext(&scheduler_context, scheduler) == FAILURE) {
+    if (makeContext(&scheduler_context, scheduler, 0, NULL, NULL) == FAILURE) {
         return FAILURE;
     }
 
@@ -180,7 +156,7 @@ void idle_func() {
 int idle_process_init() {
     //malloc space and initialize attributes
     idle_process = malloc(sizeof(pcb));
-    if (makeContext(&idle_process->ucontext, idle_func) == -1) {
+    if (makeContext(&idle_process->ucontext, idle_func, 0, NULL, NULL) == -1) {
         return FAILURE;
     }
     idle_process->pid = 0;
@@ -240,18 +216,14 @@ int main(int argc, char const *argv[])
     newPCB->pid = 1;
     newPCB->state = READY;
     newPCB->priority = 0;
-    pcb_node* newNode = (pcb_node *) malloc(sizeof(pcb_node));
-    newNode->pcb = newPCB;
-    newNode->next = NULL;
+    pcb_node* newNode = new_pcb_node(newPCB);
 
     pcb* newPCB2 = (pcb *) malloc(sizeof(pcb));
     newPCB2->ucontext = ctx2;
     newPCB2->pid = 2;
     newPCB2->state = READY;
     newPCB2->priority = 1;
-    pcb_node* newNode2 = (pcb_node *) malloc(sizeof(pcb_node));
-    newNode2->pcb = newPCB2;
-    newNode2->next = NULL;
+    pcb_node* newNode2 = new_pcb_node(newPCB2);
 
     // add this process to the process queue
     enqueue(ready_queue->mid, newNode);

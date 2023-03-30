@@ -1,4 +1,11 @@
+#include "kernel.h"
+#include "utils.h"
+#include "global.h"
 // Works as a wrapper to the kernel functions so that users can use these functions
+
+extern priority_queue* ready_queue;
+extern pcb* active_process;
+extern ucontext_t scheduler_context;
 
 /**
 * forks a new thread that retains most of the attributes of the parent thread (see k_process_create).

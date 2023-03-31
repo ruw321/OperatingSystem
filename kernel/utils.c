@@ -3,10 +3,15 @@
 
 pcb* new_pcb(ucontext_t* ucontext, pid_t pid) {
     pcb* pcb_n = (pcb*)malloc(sizeof(pcb));
+    memset(pcb_n, 0, sizeof(pcb));
     pcb_n->ucontext = *ucontext;
     pcb_n->pid = pid;
+    pcb_n->children = new_pcb_queue();
+    pcb_n->zombies = new_pcb_queue();
+
     return pcb_n;
 }
+
 
 
 pcb_node* new_pcb_node(pcb* pcb) {

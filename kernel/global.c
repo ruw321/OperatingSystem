@@ -11,8 +11,6 @@ pcb_queue* exited_queue;
 
 pcb_queue* stopped_queue;
 
-pcb_queue* signaled_queue;
-
 ucontext_t main_context;
 
 ucontext_t scheduler_context;

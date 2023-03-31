@@ -1,18 +1,16 @@
 #include "kernel.h"
 
-
 pcb* k_process_create(pcb * parent) {
-    pcb* new_pcb = (pcb *)malloc(sizeof(pcb));
-    memset(new_pcb, 0, sizeof(pcb));
-    new_pcb->ucontext = parent->ucontext; 
-    new_pcb->pid = lastPID; 
+    pcb* newPCB = new_pcb(&parent->ucontext, lastPID);
     lastPID++; 
-    new_pcb->ppid = parent->pid;
+    newPCB->ppid = parent->pid;
+    newPCB->priority = 0; // default priority is 0
+    newPCB->state = READY;
+    newPCB->prev_state = READY;
 
-    // new_pcb->priority = 0; // default priority is 0
-    new_pcb->state = READY; // initial state is ready, and should be pushed to ready queue later 
-    return new_pcb;
+    return newPCB;
 }
+
 
 int kernel_init() {
     // initialize ready queue
@@ -21,7 +19,6 @@ int kernel_init() {
     // initialize all the queues
     exited_queue = new_pcb_queue();
     stopped_queue = new_pcb_queue();
-    signaled_queue = new_pcb_queue();
 
     stopped_by_timer = false;
     

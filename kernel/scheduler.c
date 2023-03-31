@@ -70,33 +70,51 @@ pcb* next_process() {
 
 
 void scheduler() {
+    // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
     if (p_active_context != NULL && !is_priority_queue_empty(ready_queue) && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0) {
+
+        // first remove it from the ready queue
         dequeue_front_by_priority(ready_queue, active_process->priority);
         pcb_node* currNode = new_pcb_node(active_process);
+
+        // setting the previous state
+        active_process->prev_state = active_process->state;
+
         // check how the previous process ended
         if (stopped_by_timer) {
             printf("process is stopped by the timer\n");
-            active_process->state = BLOCKED;
+            active_process->state = STOPPED;
             // since the process hasn't completed yet, we add it back to the ready queue
             enqueue_by_priority(ready_queue, active_process->priority, currNode);
             stopped_by_timer = false;
         } else {
-            // process completed
+            // process completed, add it to the exit queue
+            enqueue(exited_queue, currNode);
             printf("process is finished (not stopped by the timer)\n");
-            active_process->state = COMPLETED;
             //TODO: check whether its exited normally or by signal 
             if (true) {
-                enqueue(exited_queue, currNode);
+                // exited normally
+                active_process->state = EXITED;
             } else {
                 // stopped by signal
-                enqueue(signaled_queue, currNode);
+                active_process->state = SIGNALED;
+            }
+            //TODO: have to search for parent in every queue
+            pcb_node* parent = get_node_by_pid(ready_queue->mid, active_process->ppid);
+            if (parent != NULL) {
+                dequeue_by_pid(parent->pcb->children, active_process->pid);
+                enqueue(parent->pcb->zombies, currNode);
+            } else {
+                printf("Parent node is not supposed to be null\n");
             }
         }
     }
 
     p_active_context = &scheduler_context;
     active_process = next_process();
+    active_process->prev_state = active_process->state;
+    active_process->state = RUNNING;
     printf("next selected process id: %i\n", active_process->pid);
     p_active_context = &active_process->ucontext;
     setcontext(p_active_context);
@@ -212,6 +230,7 @@ int main(int argc, char const *argv[])
     pcb* newPCB = (pcb *) malloc(sizeof(pcb));
     newPCB->ucontext = ctx1;
     newPCB->pid = 1;
+    newPCB->ppid = 4;
     newPCB->state = READY;
     newPCB->priority = 0;
     pcb_node* newNode = new_pcb_node(newPCB);
@@ -219,6 +238,7 @@ int main(int argc, char const *argv[])
     pcb* newPCB2 = (pcb *) malloc(sizeof(pcb));
     newPCB2->ucontext = ctx2;
     newPCB2->pid = 2;
+    newPCB->ppid = 4;
     newPCB2->state = READY;
     newPCB2->priority = 1;
     pcb_node* newNode2 = new_pcb_node(newPCB2);

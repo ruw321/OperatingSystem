@@ -21,7 +21,6 @@ extern ucontext_t* p_active_context;
 extern bool stopped_by_timer;
 extern pcb_queue* exited_queue;
 extern pcb_queue* stopped_queue;
-extern pcb_queue* signaled_queue;
 
 #define TICK 100000     // 1 tick = 100 milliseconds
 

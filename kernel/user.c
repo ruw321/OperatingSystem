@@ -16,8 +16,147 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     // executes the function referenced by func with its argument array argv. 
     makeContext(&(pcb->ucontext), func, 1, &scheduler_context, argv);
+    pcb_node* newNode = new_pcb_node(pcb);
     // default priority level is 0
-    enqueue(ready_queue->mid, new_pcb_node(pcb));
+    enqueue(ready_queue->mid, newNode);
+    // add to the children list for the parent
+    enqueue(active_process->children, newNode);
 
     return pcb->pid;
+}
+
+void cleanup(pcb_queue* queue, pcb_node* child) {
+    if (!is_empty(queue) && child != NULL) {
+        if (child->pcb->state == EXITED || child->pcb->state == SIGNALED) {
+            // clean up the child process
+            dequeue_by_pid(queue, child->pcb->pid);
+            //k_process_cleanup(child->pcb);
+        }
+    } else {
+        printf("parent queue and child are both not supposed to be null\n");
+    }
+}
+
+pid_t wait_for_one(pid_t pid, int *wstatus) {
+    pcb* parent = active_process; // the calling thread
+    // check the zombie first 
+    pcb_node* zombie = get_node_by_pid(parent->zombies, pid); 
+
+    // then check if it is in children 
+    pcb_node* child = get_node_by_pid(parent->children, pid); 
+
+    if (zombie != NULL) {
+        // set the status 
+        if (wstatus != NULL) {
+            *wstatus = zombie->pcb->state;
+        }
+        // clean up the zombie process
+        cleanup(parent->zombies, zombie);
+        return pid;
+    }
+    if (child == NULL) {
+        printf("Error: cannot find a child with this pid from the calling thread\n");
+        return -1;
+    }
+    // check if the state has changed
+    if (child->pcb->prev_state != child->pcb->state) {
+        child->pcb->prev_state = child->pcb->state;
+        if (wstatus != NULL) {
+            *wstatus = child->pcb->state;
+        }
+        return pid;
+    }
+    // if WNOHANG was specified and one or more child(ren) specified by pid exist, but have not yet changed state, then 0 is returned.
+    return 0;
+}
+
+pid_t wait_for_anyone(pid_t pid, int *wstatus) {
+    // if zombie queue is not empty, then we return the first zombie
+    if (!is_empty(active_process->zombies)) {
+        pcb_node* zombie_node = active_process->zombies->head;
+        pid_t zombiePID = zombie_node->pcb->pid;
+        zombie_node->pcb->prev_state = zombie_node->pcb->state;
+        // set the status
+        if (wstatus != NULL) {
+            *wstatus = zombie_node->pcb->state;
+        }
+        cleanup(active_process->zombies, zombie_node);
+        return zombiePID;
+    }
+    // then we traverse through the children 
+    pcb_queue* children = active_process->children;
+    if (!is_empty(children)) {
+        for (pcb_node* child = children->head; child != children->tail; child = child->next) {
+            if (child->pcb->prev_state != child->pcb->state) {
+                child->pcb->prev_state = child->pcb->state;
+                // set the status
+                if (wstatus != NULL) {
+                    *wstatus = child->pcb->state;
+                }
+                return child->pcb->pid;
+            }
+        }
+    }
+    return 0;
+}
+
+pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
+    // if there is no children to wait for, return -1
+    // TODO: might need to add zombies later
+    if (is_empty(active_process->children)) {
+        return -1;
+    }
+
+    if (pid > 0) {  // a particule process
+
+        if (nohang) {   
+            // non blocking
+            return wait_for_one(pid, wstatus);
+        } else {
+            // block the calling thread
+            // TODO: still dk how this will block the process
+            active_process->prev_state = BLOCKED;
+            active_process->state = BLOCKED;
+
+            // switch context to scheduler 
+            stopped_by_timer = true;
+            swapcontext(&active_process->ucontext, &scheduler_context);
+
+            // at this point, the parent process should be unblocked
+            // TODO: idk how the change of state will unblock the parent process
+            pid_t result = wait_for_one(pid, wstatus);
+
+            if (result == 0) {
+                printf("cannot 0, should return pid instead because nohang is false\n");
+                return -1;
+            }
+            return result;
+        }
+    } else {
+        // pid == -1
+        if (pid == -1) {
+
+            if (nohang) {
+                return wait_for_anyone(pid, wstatus);
+            } else {
+                // block parent and switch context
+                active_process->prev_state = BLOCKED;
+                active_process->state = BLOCKED;
+                stopped_by_timer = true;
+                swapcontext(&active_process->ucontext, &scheduler_context);
+
+                pid_t result = wait_for_anyone(pid, wstatus);
+
+                if (result == 0) {
+                    printf("cannot 0, should return pid instead because nohang is false\n");
+                    return -1;
+                }
+                return result;
+            }
+        } else {
+            printf("the pid is not greater than 0 or -1, error!\n");
+            return -1;
+        }
+    }
+    return -1;
 }

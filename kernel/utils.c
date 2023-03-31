@@ -42,6 +42,17 @@ bool is_priority_queue_empty(priority_queue* ready_queue) {
     return is_empty(ready_queue->high) && is_empty(ready_queue->mid) && is_empty(ready_queue->low);
 }
 
+pcb_queue* get_pcb_queue_by_priority(priority_queue* ready_queue, int priority) {
+    pcb_queue* queue=NULL;
+    if (priority == HIGH) {
+        queue = ready_queue->high;
+    } else if (priority == MID) {
+        queue = ready_queue->mid;
+    } else if (priority == LOW) { 
+        queue = ready_queue->low;
+    }
+    return queue;
+}
 
 void enqueue(pcb_queue* queue, pcb_node* node) {
     if (is_empty(queue)) {
@@ -54,13 +65,8 @@ void enqueue(pcb_queue* queue, pcb_node* node) {
 }     
 
 void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* node) {
-    if (priority == HIGH) {
-        enqueue(ready_queue->high, node);
-    } else if (priority == MID) {
-        enqueue(ready_queue->mid, node);
-    } else if (priority == LOW) { 
-        enqueue(ready_queue->low, node);
-    }
+    pcb_queue* queue = get_pcb_queue_by_priority(ready_queue, priority);
+    enqueue(queue, node);
 }
 
 
@@ -102,6 +108,8 @@ int dequeue_front(pcb_queue* queue) {
         return -1;
     }
 
+    pcb_node* current = queue->head;
+
     if (queue->head == queue->tail) {
         // only one node in the queue
         queue->head = NULL;
@@ -110,19 +118,14 @@ int dequeue_front(pcb_queue* queue) {
         queue->head = queue->head->next;
     }
 
+    free(current);
     return 0;
 }
 
 
 int dequeue_front_by_priority(priority_queue* ready_queue, int priority) {
-    if (priority == HIGH) {
-        return dequeue_front(ready_queue->high);
-    } else if (priority == MID) {
-        return dequeue_front(ready_queue->mid);
-    } else if (priority == LOW) { 
-        return dequeue_front(ready_queue->low);
-    }
-    return -1;
+    pcb_queue* queue = get_pcb_queue_by_priority(ready_queue, priority);
+    return dequeue_front(queue);
 }
 
 
@@ -152,4 +155,36 @@ int pick_priority() {
     } else {
         return HIGH;
     }
+}
+
+void set_stack(stack_t *stack)
+{
+    void *sp = malloc(SIGSTKSZ);
+    VALGRIND_STACK_REGISTER(sp, sp + SIGSTKSZ);
+
+    *stack = (stack_t) { .ss_sp = sp, .ss_size = SIGSTKSZ };
+}
+
+int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_context, char *argv[]) {
+    // intialize the context
+    if (getcontext(ucp) == -1) {
+        perror("Error in getcontext(context)\n");
+        return FAILURE;
+    }
+
+    sigemptyset(&ucp->uc_sigmask);
+    set_stack(&ucp->uc_stack);
+    if (next_context == NULL) {
+        ucp->uc_link = NULL;
+    } else {
+        ucp->uc_link = next_context;
+    }
+
+    // set up the stack and instruction pointer for the context
+    if (argv == NULL) {
+        makecontext(ucp, func, argc);
+    } else {
+        makecontext(ucp, func, argc, argv);
+    }
+    return SUCCESS;
 }

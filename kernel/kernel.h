@@ -1,5 +1,6 @@
 #include <string.h>
-#include<unistd.h>
+#include <unistd.h>
+#include <signal.h>
 #include "utils.h"
 #include "global.h"
 

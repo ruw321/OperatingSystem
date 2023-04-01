@@ -180,24 +180,81 @@ void bar() {
 
 int main(int argc, char const *argv[])
 {
+    // // initialize process queue
+    // if (kernel_init() == -1) {
+    //     perror("error with initializing kernel level\n");
+    // }
+    // printf("initializing context for testing\n");
+    // ucontext_t ctx1, ctx2;
+    // char stack1[8192], stack2[8192];
+    // // Initialize context 1
+    // getcontext(&ctx1);
+    // ctx1.uc_stack.ss_sp = stack1;
+    // ctx1.uc_stack.ss_size = sizeof(stack1);
+    // ctx1.uc_link = &scheduler_context;
+    // makecontext(&ctx1, foo, 0);
+
+    // // Initialize context 2
+    // getcontext(&ctx2);
+    // ctx2.uc_stack.ss_sp = stack2;
+    // ctx2.uc_stack.ss_size = sizeof(stack2);
+    // ctx2.uc_link = &scheduler_context;
+    // makecontext(&ctx2, bar, 0);
+
+    // // // Initialize context 3
+    // // getcontext(&ctx3);
+    // // ctx2.uc_stack.ss_sp = stack1;
+    // // ctx2.uc_stack.ss_size = sizeof(stack1);
+    // // ctx2.uc_link = &ctx1;
+    // // makecontext(&ctx2, bar, 0);
+
+    // printf("initializing PCBs for testing\n");
+    // pcb* newPCB = (pcb *) malloc(sizeof(pcb));
+    // newPCB->ucontext = ctx1;
+    // newPCB->pid = 1;
+    // newPCB->state = READY;
+    // newPCB->priority = 0;
+    // pcb_node* newNode = new_pcb_node(newPCB);
+
+    // pcb* newPCB2 = (pcb *) malloc(sizeof(pcb));
+    // newPCB2->ucontext = ctx2;
+    // newPCB2->pid = 2;
+    // newPCB2->state = READY;
+    // newPCB2->priority = 1;
+    // pcb_node* newNode2 = new_pcb_node(newPCB2);
+
+    // // add this process to the process queue
+    // // enqueue(ready_queue->mid, newNode);
+    // // enqueue(ready_queue->low, newNode2);
+    // enqueue_by_priority(ready_queue, MID, newNode);
+    // enqueue_by_priority(ready_queue, LOW, newNode2);
+
+    // scheduler_init();
+    // swapcontext(&main_context, &scheduler_context);
+
+
     // initialize process queue
     if (kernel_init() == -1) {
         perror("error with initializing kernel level\n");
     }
     printf("initializing context for testing\n");
     ucontext_t ctx1, ctx2;
-    char stack1[8192], stack2[8192];
+    // char stack1[8192], stack2[8192];
     // Initialize context 1
     getcontext(&ctx1);
-    ctx1.uc_stack.ss_sp = stack1;
-    ctx1.uc_stack.ss_size = sizeof(stack1);
+    sigemptyset(&(ctx1.uc_sigmask));
+    set_stack(&(ctx1.uc_stack));
     ctx1.uc_link = &scheduler_context;
+
+    // ctx1.uc_stack.ss_sp = stack1;
+    // ctx1.uc_stack.ss_size = sizeof(stack1);
+    // ctx1.uc_link = &scheduler_context;
     makecontext(&ctx1, foo, 0);
 
     // Initialize context 2
     getcontext(&ctx2);
-    ctx2.uc_stack.ss_sp = stack2;
-    ctx2.uc_stack.ss_size = sizeof(stack2);
+    sigemptyset(&(ctx2.uc_sigmask));
+    set_stack(&(ctx2.uc_stack));
     ctx2.uc_link = &scheduler_context;
     makecontext(&ctx2, bar, 0);
 
@@ -224,11 +281,14 @@ int main(int argc, char const *argv[])
     pcb_node* newNode2 = new_pcb_node(newPCB2);
 
     // add this process to the process queue
-    enqueue(ready_queue->mid, newNode);
-    enqueue(ready_queue->low, newNode2);
+    // enqueue(ready_queue->mid, newNode);
+    // enqueue(ready_queue->low, newNode2);
+    enqueue_by_priority(ready_queue, MID, newNode);
+    enqueue_by_priority(ready_queue, LOW, newNode2);
 
     scheduler_init();
     swapcontext(&main_context, &scheduler_context);
+
 
     return 0;
 }

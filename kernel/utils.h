@@ -15,10 +15,13 @@ typedef struct pcb {
     ucontext_t ucontext;
     pid_t pid;
     pid_t ppid;     // parent pid
+    enum process_state prev_state;
     enum process_state state;       // state of the process
     int priority;
     int input_fd;
     int output_fd;
+    struct pcb_queue* children;
+    struct pcb_queue* zombies;
     // TODO: other fields to be added
 } pcb;
 

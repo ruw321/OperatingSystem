@@ -8,13 +8,13 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         return -1;
     }
     // TODO: attach them to PCB, they are used later in the shell
-
     // fd0 is the file descriptor for the input file, and 
     pcb->input_fd = fd0;
     // fd1 is the file descriptor for the output file.
     pcb->output_fd = fd1;
 
     // executes the function referenced by func with its argument array argv. 
+    // TODO: change it to the number of arguments instead of 1
     makeContext(&(pcb->ucontext), func, 1, &scheduler_context, argv);
     pcb_node* newNode = new_pcb_node(pcb);
     // default priority level is 0
@@ -102,8 +102,7 @@ pid_t wait_for_anyone(pid_t pid, int *wstatus) {
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     // if there is no children to wait for, return -1
-    // TODO: might need to add zombies later
-    if (is_empty(active_process->children)) {
+    if (is_empty(active_process->children) && is_empty(active_process->zombies)) {
         return -1;
     }
 
@@ -117,13 +116,14 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             // TODO: still dk how this will block the process
             active_process->prev_state = BLOCKED;
             active_process->state = BLOCKED;
+            // this is how children would know parent is waiting
+            active_process->ticks_to_reach = -1;    
 
             // switch context to scheduler 
             stopped_by_timer = true;
             swapcontext(&active_process->ucontext, &scheduler_context);
 
             // at this point, the parent process should be unblocked
-            // TODO: idk how the change of state will unblock the parent process
             pid_t result = wait_for_one(pid, wstatus);
 
             if (result == 0) {
@@ -139,7 +139,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             if (nohang) {
                 return wait_for_anyone(pid, wstatus);
             } else {
-                // block parent and switch context
+                // block parent, remove it from the ready queue and switch context
                 active_process->prev_state = BLOCKED;
                 active_process->state = BLOCKED;
                 stopped_by_timer = true;
@@ -159,4 +159,77 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
         }
     }
     return -1;
+}
+
+int p_kill(pid_t pid, int sig) {
+    // TODO: search by pid in all queues
+    pcb_node* target_node = get_node_by_pid_all_alive_queues(pid);
+    if (target_node == NULL) {
+        printf("target node with the pid %i does not exist\n", pid);
+        return -1;
+    }
+    return k_process_kill(target_node->pcb, sig);
+}
+
+pcb_node* get_node_by_pid_all_alive_queues(pid_t pid) {
+    pcb_node* ready_node = get_node_from_ready_queue(ready_queue, pid);
+    if (ready_node == NULL) {
+        pcb_node* stop_node = get_node_by_pid(stopped_queue, pid);
+        return stop_node;
+    } else {
+        return ready_node;
+    }
+}
+
+void p_exit(void) {
+    // k_process_cleanup(active_process);
+    // check if it the first process (shell)
+    if (active_process->pid == 1) {
+        // TODO: clean up the shell's memory
+    }
+}
+
+int p_nice(pid_t pid, int priority) {
+    if (priority < -1 || priority > 1) {
+        printf("Priority has to be 1, 0, or -1\n");
+        return -1;
+    }
+    // check if it is in the ready queue
+    pcb_node* target_node = get_node_from_ready_queue(ready_queue, pid);
+    if (target_node == NULL) {
+        // if it is not, just update the priority 
+        target_node = get_node_by_pid(stopped_queue, pid);
+        if (target_node == NULL) {
+            printf("node with the pid %i does not exist\n", pid);
+            return -1;
+        }
+        target_node->pcb->priority = priority;
+    } else {
+        pcb* target_pcb = target_node->pcb;
+        // if it is, change the queue if necessary
+        if (target_pcb->priority != priority) {
+            // change the queue
+            pcb_queue* orginal_queue = get_pcb_queue_by_priority(ready_queue, target_pcb->priority);
+            if (dequeue_by_pid(orginal_queue, pid) == -1) {
+                printf("Error removing the node from the queue\n");
+                return -1;
+            }
+            enqueue_by_priority(ready_queue, priority, new_pcb_node(target_pcb));
+        } 
+    }
+
+    return pid;
+}
+
+void p_sleep(unsigned int ticks) {
+    if (ticks < 1) {
+        printf("ticks has to be greater than 1\n");
+        return;
+    }
+    // sets the calling process to blocked until ticks of the system clock elapse
+    // and then sets the thread to running 
+    active_process->prev_state = BLOCKED;
+    active_process->state = BLOCKED;
+    active_process->ticks_to_reach = tick_tracker + ticks;
+    swapcontext(&active_process->ucontext, &scheduler_context);
 }

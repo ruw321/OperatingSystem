@@ -21,6 +21,7 @@ extern ucontext_t* p_active_context;
 extern bool stopped_by_timer;
 extern pcb_queue* exited_queue;
 extern pcb_queue* stopped_queue;
+extern int tick_tracker;
 
 #define TICK 100000     // 1 tick = 100 milliseconds
 
@@ -29,6 +30,8 @@ void alarm_handler();       // The signal handler for SIGALARM
 int set_timer();   // set up time interval for SIGALARM
 
 pcb* next_process();    // get the next process to run from the ready queue based on priority 
+
+pcb_node* get_node_by_pid_all_queues(pid_t pid);     // Find the element with pid from all the queues
 
 void scheduler();   // The function of scheduler
 

@@ -13,7 +13,6 @@ enum process_state {
     ORPHANED,
     EXITED,     // terminated normally
     SIGNALED,   // terminated by a signal
-    TERMINATED,
 };
 
 #endif

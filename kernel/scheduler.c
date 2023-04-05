@@ -22,7 +22,7 @@ void alarm_handler(int signum)
     // TODO: add logic for sleep command
     printf("triggered the alarm\n");
     stopped_by_timer = true;
-
+    tick_tracker++;
     swapcontext(p_active_context, &scheduler_context);
 }
 
@@ -48,24 +48,32 @@ pcb* next_process() {
         return idle_process;
     }
 
-    pcb_queue* chosen_queue;
+    pcb_queue* chosen_queue = NULL;
     while(true) {
         int proposal = pick_priority();
         printf("priority in proposal is: %i\n", proposal);
         if (proposal == HIGH && !is_empty(ready_queue->high)) {
             chosen_queue = ready_queue->high;
-            break;
         } else if (proposal == MID && !is_empty(ready_queue->mid)) {
             chosen_queue = ready_queue->mid;
-            break;
         } else if (proposal == LOW && !is_empty(ready_queue->low)) { 
             chosen_queue = ready_queue->low;
-            break;
+        }
+
+        if (chosen_queue->head->pcb->ticks_to_reach <= tick_tracker) {
+            if (chosen_queue->head->pcb->ticks_to_reach > 0) {
+                process_unblock(chosen_queue->head->pcb->pid);
+            }
+            return chosen_queue->head->pcb;
+        } else {
+            // move the head to the tail
+            // TODO: there might be a problem of adding the node back in 
+            // since the node is already freed
+            pcb_node* temp = chosen_queue->head;
+            dequeue_front(chosen_queue);
+            enqueue(chosen_queue, temp);
         }
     }
-
-    pcb_node* next_node = chosen_queue->head;
-    return next_node->pcb;
 }
 
 
@@ -84,29 +92,50 @@ void scheduler() {
         // check how the previous process ended
         if (stopped_by_timer) {
             printf("process is stopped by the timer\n");
-            active_process->state = STOPPED;
+
             // since the process hasn't completed yet, we add it back to the ready queue
             enqueue_by_priority(ready_queue, active_process->priority, currNode);
             stopped_by_timer = false;
         } else {
-            // process completed, add it to the exit queue
-            enqueue(exited_queue, currNode);
-            printf("process is finished (not stopped by the timer)\n");
-            //TODO: check whether its exited normally or by signal 
-            if (true) {
-                // exited normally
-                active_process->state = EXITED;
+            // check whether the process is completed or blocked or stopped
+            if (active_process->ticks_to_reach <= tick_tracker && active_process->state == RUNNING) {
+                // process completed, add it to the exit queue
+                enqueue(exited_queue, currNode);
+                printf("process is finished (not stopped by the timer)\n");
+                //TODO: check whether its exited normally or by signal 
+                if (true) {
+                    // exited normally
+                    active_process->state = EXITED;
+                } else {
+                    // stopped by signal
+                    active_process->state = SIGNALED;
+                }
+                pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
+                if (parent != NULL) {
+                    // if the parent is blocked waiting for it, unblock the parent
+                    if (parent->pcb->ticks_to_reach == -1) {
+                        if (process_unblock(active_process->ppid) == -1) {
+                            printf("failed to unblock the parent\n");
+                        }
+                    }
+                    // remove the node from children queue and add it to the zombies queue
+                    dequeue_by_pid(parent->pcb->children, active_process->pid);
+                    enqueue(parent->pcb->zombies, currNode);
+                } else {
+                    printf("Parent node is not supposed to be null\n");
+                }
+                // TODO: orphan clean ups
+                // k_process_cleaup_orphan(active_process);
             } else {
-                // stopped by signal
-                active_process->state = SIGNALED;
-            }
-            //TODO: have to search for parent in every queue
-            pcb_node* parent = get_node_by_pid(ready_queue->mid, active_process->ppid);
-            if (parent != NULL) {
-                dequeue_by_pid(parent->pcb->children, active_process->pid);
-                enqueue(parent->pcb->zombies, currNode);
-            } else {
-                printf("Parent node is not supposed to be null\n");
+                // if it is BLOCKED or STOPPED
+                if (active_process->ticks_to_reach > 0) {
+                    // BLOCKED by p_sleep 
+                    enqueue_by_priority(ready_queue, active_process->priority, currNode);
+                } else {
+                    // BLOCKED by p_waitpid, add it to the stopped queue
+                    enqueue(stopped_queue, currNode);
+                }
+                // TODO: deal with processes stopped by signals
             }
         }
     }
@@ -182,14 +211,25 @@ int idle_process_init() {
     return SUCCESS;
 }
 
+pcb_node* get_node_by_pid_all_queues(pid_t pid) {
+    pcb_node* ready_node = get_node_from_ready_queue(ready_queue, pid);
+    if (ready_node == NULL) {
+        pcb_node* stop_node = get_node_by_pid(stopped_queue, pid);
+        if (stop_node == NULL) {
+            pcb_node* exit_node = get_node_by_pid(exited_queue, pid);
+            return exit_node;
+        } else {
+            return stop_node;
+        }
+    } else {
+        return ready_node;
+    }
+}
+
 void foo() {
     printf("In foo\n");
     sleep(2);
     printf("after sleep\n");
-}
-
-void foo2() {
-    printf("In foo2\n");
 }
 
 void bar() {

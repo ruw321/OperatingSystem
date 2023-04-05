@@ -23,3 +23,6 @@ int k_process_cleanup(pcb *process);
 
 // initialize kernel 
 int kernel_init();
+
+// unblock a process
+int process_unblock(pid_t pid);

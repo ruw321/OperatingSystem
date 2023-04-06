@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>    
 #include <sys/time.h>  // setitimer
+#include <sys/types.h>
 #include <ucontext.h>  // getcontext, makecontext, setcontext, swapcontext    
 #include <time.h>
 #include <valgrind/valgrind.h> 

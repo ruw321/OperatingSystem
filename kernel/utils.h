@@ -4,6 +4,7 @@
 #include <signal.h>    // sigaction, sigemptyset, sigfillset, signal
 #include <stdbool.h>
 #include <stdio.h>     
+#include <string.h>
 #include <stdlib.h>    
 #include <sys/time.h>  // setitimer
 #include <sys/types.h>
@@ -16,10 +17,14 @@ typedef struct pcb {
     ucontext_t ucontext;
     pid_t pid;
     pid_t ppid;     // parent pid
+    enum process_state prev_state;
     enum process_state state;       // state of the process
     int priority;
     int input_fd;
     int output_fd;
+    int ticks_to_reach;     // > 1 represents the wait times, -1 means parent is waiting
+    struct pcb_queue* children;     // processes that have not completed yet
+    struct pcb_queue* zombies;      // processes that are completed but the parent has not waited for it yet
     // TODO: other fields to be added
 } pcb;
 
@@ -54,7 +59,10 @@ void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* no
 int dequeue_by_pid(pcb_queue* queue, pid_t pid);    // Dequeue the element with pid from the queue
 int dequeue_front(pcb_queue* queue);      // Dequeue the first element from the queue
 int dequeue_front_by_priority(priority_queue* ready_queue, int priority);    // Dequeue the first element from the queue based on the priority
+
 pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);     // Find the element with pid from the queue
+
+pcb_node* get_node_from_ready_queue(priority_queue* ready_queue, pid_t pid);     // Find the element with pid from the ready queue
 
 int pick_priority();        // Randomly pick a queue from ready queue based on the priority
 

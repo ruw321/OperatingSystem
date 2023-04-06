@@ -4,10 +4,15 @@
 // JobList _jobList; // store all background job
 
 void shell_process() {
-    while (1) {
-        printf("shell> ");
-        break;
-    }    
+    // while (1) {
+    //     printf("shell> ");
+    //     break;
+    // }
+    printf("shell process\n");    
+    printf("shell process\n");
+    printf("shell process\n");    
+    printf("shell process\n");    
+    printf("shell process\n");    
 }
 
 int shell_init(int argc, char **argv) {
@@ -20,6 +25,7 @@ int shell_init(int argc, char **argv) {
     if (scheduler_init() == FAILURE ) {
         return FAILURE;
     }
+
     // initialize main context
     printf("init main context\n");
     getcontext(&main_context);
@@ -38,6 +44,8 @@ int shell_init(int argc, char **argv) {
     terminal->state = READY;
     terminal->priority = 0;
 
+    pcb_node *terminal_node = new_pcb_node(terminal);
+
     printf("init shell context\n");
     getcontext(&terminal->ucontext);
     set_stack(&(terminal->ucontext.uc_stack));
@@ -46,9 +54,7 @@ int shell_init(int argc, char **argv) {
     terminal->ucontext.uc_link = &main_context;
     makecontext(&terminal->ucontext, shell_process, 0);
 
-    pcb_node *terminal_node = new_pcb_node(terminal);
-
-    enqueue_by_priority(ready_queue, -1, terminal_node);
+    enqueue_by_priority(ready_queue, HIGH, terminal_node);
 
     return SUCCESS;
 }

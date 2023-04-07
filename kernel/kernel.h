@@ -10,7 +10,6 @@ extern priority_queue* ready_queue;
 extern bool stopped_by_timer;
 extern pcb_queue* exited_queue;
 extern pcb_queue* stopped_queue;
-extern pcb_queue* signaled_queue;
 
 /**
  * create a new child thread and associated PCB. The new thread should retain much of the properties of the parent. The function should return a reference to the new PCB.
@@ -37,3 +36,5 @@ int unblock_process(pid_t pid);
 
 // TODO: ADD LOGIC (probably change to other files)
 bool is_foreground(pid_t pid) {return false;}
+// unblock a process
+int process_unblock(pid_t pid);

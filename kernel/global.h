@@ -10,4 +10,9 @@
 #define SUCCESS 0
 #define FAILURE -1
 
+// according to https://chromium.googlesource.com/chromiumos/docs/+/master/constants/signals.md
+#define S_SIGSTOP 19
+#define S_SIGCONT 18
+#define S_SIGTERM 15
+
 #endif

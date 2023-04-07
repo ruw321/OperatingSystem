@@ -9,10 +9,9 @@ enum process_state {
     READY,
     BLOCKED,
     STOPPED,
-    TERMINATED,
     ZOMBIED,
     ORPHANED,
-    COMPLETED,
+    TERMINATED,     // terminated normally
 };
 
 #endif

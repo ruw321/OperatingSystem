@@ -1,11 +1,7 @@
 #include "kernel.h"
 
-
 pcb* k_process_create(pcb * parent) {
-    pcb* new_pcb = (pcb *)malloc(sizeof(pcb));
-    memset(new_pcb, 0, sizeof(pcb));
-    new_pcb->ucontext = parent->ucontext; 
-    new_pcb->pid = lastPID; 
+    pcb* new_pcb = new_pcb(&parent->ucontext, lastPID);
     lastPID++; 
     new_pcb->ppid = parent->pid;
 
@@ -22,6 +18,7 @@ pcb* k_process_create(pcb * parent) {
     return new_pcb;
 }
 
+
 int kernel_init() {
     // initialize ready queue
     ready_queue = new_priority_queue();
@@ -29,7 +26,6 @@ int kernel_init() {
     // initialize all the queues
     exited_queue = new_pcb_queue();
     stopped_queue = new_pcb_queue();
-    signaled_queue = new_pcb_queue();
 
     stopped_by_timer = false;
     
@@ -192,4 +188,27 @@ int unblock_process(pid_t pid) {
     enqueue(cur_queue, p_node);
 
     return SUCCESS;
+}
+
+int process_unblock(pid_t pid) {
+    // find the corresponding pcb
+    pcb_node* unblock_node = get_node_by_pid(stopped_queue, pid);
+    if (unblock_node == NULL) {
+        printf("The process you are unblocking doesn't exist in the stopped queue\n");
+        return -1;
+    }
+
+    unblock_node->pcb->state = READY;
+    unblock_node->pcb->prev_state = READY;
+    unblock_node->pcb->ticks_to_reach = 0;
+
+    // remove from the stopped queue, and add it back to the ready queue
+    if (unblock_node->pcb->state == BLOCKED && unblock_node->pcb->ticks_to_reach < 1) {
+        if (dequeue_by_pid(stopped_queue, unblock_node->pcb->pid) == -1) {
+            printf("Error with removing the node from the stopped queue\n");
+            return -1;
+        }
+        enqueue_by_priority(ready_queue, unblock_node->pcb->priority, unblock_node);
+    }
+    return 0;
 }

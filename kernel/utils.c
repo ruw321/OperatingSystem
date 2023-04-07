@@ -3,8 +3,13 @@
 
 pcb* new_pcb(ucontext_t* ucontext, pid_t pid) {
     pcb* pcb_n = (pcb*)malloc(sizeof(pcb));
+    memset(pcb_n, 0, sizeof(pcb));
     pcb_n->ucontext = *ucontext;
     pcb_n->pid = pid;
+    pcb_n->children = new_pcb_queue();
+    pcb_n->zombies = new_pcb_queue();
+    pcb_n->ticks_to_reach = 0;
+    pcb_n->priority = 0;
     return pcb_n;
 }
 
@@ -15,7 +20,6 @@ pcb_node* new_pcb_node(pcb* pcb) {
     node->next = NULL;
     return node;
 }
-
 
 pcb_queue* new_pcb_queue() {
     pcb_queue* queue = (pcb_queue*)malloc(sizeof(pcb_queue));
@@ -186,6 +190,17 @@ void deconstruct_priority_queue(priority_queue* ready_queue) {
     deconstruct_queue(ready_queue->mid);
     deconstruct_queue(ready_queue->low);
     free(ready_queue);
+}
+
+pcb_node* get_node_from_ready_queue(priority_queue* ready_queue, pid_t pid) {
+    pcb_node* ready_node = get_node_by_pid(ready_queue->high, pid);
+    if (ready_node == NULL) {
+        ready_node = get_node_by_pid(ready_queue->mid, pid);
+        if (ready_node == NULL) {
+            ready_node = get_node_by_pid(ready_queue->low, pid);
+        } 
+    }
+    return ready_node;
 }
 
 int pick_priority() {

@@ -60,6 +60,10 @@ int dequeue_front(pcb_queue* queue);      // Dequeue the first element from the 
 int dequeue_front_by_priority(priority_queue* ready_queue, int priority);    // Dequeue the first element from the queue based on the priority
 
 pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);     // Find the element with pid from the queue
+pcb_node* get_node_by_pid_from_priority_queue(priority_queue* ready_queue, pid_t pid);   // Find the element with pid from the priority queue
+
+void deconstruct_queue(pcb_queue* queue);   // free the pcb queue
+void deconstruct_priority_queue(priority_queue* ready_queue);   // free the pcb priority queue
 
 pcb_node* get_node_from_ready_queue(priority_queue* ready_queue, pid_t pid);     // Find the element with pid from the ready queue
 

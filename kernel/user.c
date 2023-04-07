@@ -27,7 +27,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
 void cleanup(pcb_queue* queue, pcb_node* child) {
     if (!is_empty(queue) && child != NULL) {
-        if (child->pcb->state == EXITED || child->pcb->state == SIGNALED) {
+        if (child->pcb->state == TERMINATED) {
             // clean up the child process
             dequeue_by_pid(queue, child->pcb->pid);
             //k_process_cleanup(child->pcb);

@@ -144,6 +144,54 @@ pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid) {
     return NULL;
 }
 
+pcb_node* get_node_by_pid_from_priority_queue(priority_queue* ready_queue, pid_t pid) {
+    // Find in high priority queue
+    pcb_node* current = ready_queue->high->head;
+    while (current != NULL) {
+        if (current->pcb->pid == pid) {
+            return current;
+        }
+        current = current->next;
+    }
+
+    // Find in mid priority queue
+    current = ready_queue->mid->head;
+    while (current != NULL) {
+        if (current->pcb->pid == pid) {
+            return current;
+        }
+        current = current->next;
+    }
+
+    // Find in low priority queue
+    current = ready_queue->low->head;
+    while (current != NULL) {
+        if (current->pcb->pid == pid) {
+            return current;
+        }
+        current = current->next;
+    }
+
+    return NULL;
+}
+
+void deconstruct_queue(pcb_queue* queue) {
+    pcb_node* current = queue->head;
+    while (current != NULL) {
+        pcb_node* tmp = current;
+        current = current->next;
+        free(tmp);
+    }
+    free(queue);
+}
+
+void deconstruct_priority_queue(priority_queue* ready_queue) {
+    deconstruct_queue(ready_queue->high);
+    deconstruct_queue(ready_queue->mid);
+    deconstruct_queue(ready_queue->low);
+    free(ready_queue);
+}
+
 pcb_node* get_node_from_ready_queue(priority_queue* ready_queue, pid_t pid) {
     pcb_node* ready_node = get_node_by_pid(ready_queue->high, pid);
     if (ready_node == NULL) {

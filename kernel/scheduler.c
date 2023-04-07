@@ -78,6 +78,9 @@ pcb* next_process() {
 
 
 void scheduler() {
+    //TODO: CHANGE THE IF STATEMENT FOR p_active_context
+    p_active_context = &scheduler_context;
+
     // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
     if (p_active_context != NULL && !is_priority_queue_empty(ready_queue) && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0) {
@@ -102,13 +105,13 @@ void scheduler() {
                 // process completed, add it to the exit queue
                 enqueue(exited_queue, currNode);
                 printf("process is finished (not stopped by the timer)\n");
-                //TODO: check whether its exited normally or by signal 
+                //TODO: if the process exited either normally or by signal
                 if (true) {
                     // exited normally
-                    active_process->state = EXITED;
+                    active_process->state = TERMINATED;
                 } else {
                     // stopped by signal
-                    active_process->state = SIGNALED;
+                    active_process->state = TERMINATED;
                 }
                 pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
                 if (parent != NULL) {
@@ -140,7 +143,7 @@ void scheduler() {
         }
     }
 
-    p_active_context = &scheduler_context;
+    
     active_process = next_process();
     active_process->prev_state = active_process->state;
     active_process->state = RUNNING;
@@ -244,18 +247,22 @@ int main(int argc, char const *argv[])
     }
     printf("initializing context for testing\n");
     ucontext_t ctx1, ctx2;
-    char stack1[8192], stack2[8192];
+    // char stack1[8192], stack2[8192];
     // Initialize context 1
     getcontext(&ctx1);
-    ctx1.uc_stack.ss_sp = stack1;
-    ctx1.uc_stack.ss_size = sizeof(stack1);
+    sigemptyset(&(ctx1.uc_sigmask));
+    set_stack(&(ctx1.uc_stack));
     ctx1.uc_link = &scheduler_context;
+
+    // ctx1.uc_stack.ss_sp = stack1;
+    // ctx1.uc_stack.ss_size = sizeof(stack1);
+    // ctx1.uc_link = &scheduler_context;
     makecontext(&ctx1, foo, 0);
 
     // Initialize context 2
     getcontext(&ctx2);
-    ctx2.uc_stack.ss_sp = stack2;
-    ctx2.uc_stack.ss_size = sizeof(stack2);
+    sigemptyset(&(ctx2.uc_sigmask));
+    set_stack(&(ctx2.uc_stack));
     ctx2.uc_link = &scheduler_context;
     makecontext(&ctx2, bar, 0);
 
@@ -284,11 +291,12 @@ int main(int argc, char const *argv[])
     pcb_node* newNode2 = new_pcb_node(newPCB2);
 
     // add this process to the process queue
-    enqueue(ready_queue->mid, newNode);
-    enqueue(ready_queue->low, newNode2);
+    enqueue_by_priority(ready_queue, MID, newNode);
+    enqueue_by_priority(ready_queue, LOW, newNode2);
 
     scheduler_init();
     swapcontext(&main_context, &scheduler_context);
+
 
     return 0;
 }

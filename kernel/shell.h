@@ -9,6 +9,6 @@
 
 void shell_process();
 
-int shell_init(int argc, char **argv);
+int shell_init(int argc, const char **argv);
 
 #endif

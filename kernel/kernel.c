@@ -1,21 +1,21 @@
 #include "kernel.h"
 
 pcb* k_process_create(pcb * parent) {
-    pcb* new_pcb = new_pcb(&parent->ucontext, lastPID);
+    pcb* newPCB = new_pcb(&parent->ucontext, lastPID);
     lastPID++; 
-    new_pcb->ppid = parent->pid;
+    newPCB->ppid = parent->pid;
 
-    new_pcb->state = READY; // initial state is ready, and should be pushed to ready queue later
-    new_pcb->prev_state = READY;
+    newPCB->state = READY; // initial state is ready, and should be pushed to ready queue later
+    newPCB->prev_state = READY;
 
-    new_pcb->priority = MID; // default priority is 0
-    new_pcb->input_fd = STDIN_FILENO;
-    new_pcb->output_fd = STDOUT_FILENO;
+    newPCB->priority = MID; // default priority is 0
+    newPCB->input_fd = STDIN_FILENO;
+    newPCB->output_fd = STDOUT_FILENO;
 
-    new_pcb->children = new_pcb_queue();
-    new_pcb->zombies = new_pcb_queue();
+    newPCB->children = new_pcb_queue();
+    newPCB->zombies = new_pcb_queue();
     
-    return new_pcb;
+    return newPCB;
 }
 
 
@@ -166,6 +166,9 @@ int block_process(pid_t pid) {
     return SUCCESS;
 }
 
+bool is_foreground(pid_t pid) {
+    return false;
+}
 
 int unblock_process(pid_t pid) {
     // find the process in stopped queue given its pid

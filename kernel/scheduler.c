@@ -105,13 +105,13 @@ void scheduler() {
                 // process completed, add it to the exit queue
                 enqueue(exited_queue, currNode);
                 printf("process is finished (not stopped by the timer)\n");
-                //TODO: check whether its exited normally or by signal 
+                //TODO: if the process exited either normally or by signal
                 if (true) {
                     // exited normally
-                    active_process->state = EXITED;
+                    active_process->state = TERMINATED;
                 } else {
                     // stopped by signal
-                    active_process->state = SIGNALED;
+                    active_process->state = TERMINATED;
                 }
                 pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
                 if (parent != NULL) {

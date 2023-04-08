@@ -60,6 +60,10 @@ pcb* next_process() {
             chosen_queue = ready_queue->low;
         }
 
+        if (chosen_queue == NULL) {
+            continue;
+        }
+
         if (chosen_queue->head->pcb->ticks_to_reach <= tick_tracker) {
             if (chosen_queue->head->pcb->ticks_to_reach > 0) {
                 process_unblock(chosen_queue->head->pcb->pid);
@@ -69,17 +73,22 @@ pcb* next_process() {
             // move the head to the tail
             // TODO: there might be a problem of adding the node back in 
             // since the node is already freed
-            pcb_node* temp = chosen_queue->head;
+
+            // pcb_node* temp = chosen_queue->head;
+            // dequeue_front(chosen_queue);
+            // enqueue(chosen_queue, temp);
+
+            pcb* temp = chosen_queue->head->pcb;
             dequeue_front(chosen_queue);
-            enqueue(chosen_queue, temp);
+            pcb_node* temp_node = new_pcb_node(temp);
+            enqueue(chosen_queue, temp_node);
         }
     }
 }
 
 
 void scheduler() {
-    //TODO: CHANGE THE IF STATEMENT FOR p_active_context
-    p_active_context = &scheduler_context;
+    
 
     // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
@@ -143,7 +152,7 @@ void scheduler() {
         }
     }
 
-    
+    p_active_context = &scheduler_context;
     active_process = next_process();
     active_process->prev_state = active_process->state;
     active_process->state = RUNNING;
@@ -246,7 +255,7 @@ int main(int argc, char const *argv[])
         perror("error with initializing kernel level\n");
     }
     printf("initializing context for testing\n");
-    ucontext_t ctx1, ctx2;
+    ucontext_t ctx1, ctx2, ctx3;
     // char stack1[8192], stack2[8192];
     // Initialize context 1
     getcontext(&ctx1);
@@ -267,11 +276,11 @@ int main(int argc, char const *argv[])
     makecontext(&ctx2, bar, 0);
 
     // // Initialize context 3
-    // getcontext(&ctx3);
-    // ctx2.uc_stack.ss_sp = stack1;
-    // ctx2.uc_stack.ss_size = sizeof(stack1);
-    // ctx2.uc_link = &ctx1;
-    // makecontext(&ctx2, bar, 0);
+    getcontext(&ctx3);
+    sigemptyset(&(ctx3.uc_sigmask));
+    set_stack(&(ctx3.uc_stack));
+    ctx3.uc_link = &scheduler_context;
+    makecontext(&ctx3, bar, 0);
 
     printf("initializing PCBs for testing\n");
     pcb* newPCB = (pcb *) malloc(sizeof(pcb));
@@ -285,14 +294,23 @@ int main(int argc, char const *argv[])
     pcb* newPCB2 = (pcb *) malloc(sizeof(pcb));
     newPCB2->ucontext = ctx2;
     newPCB2->pid = 2;
-    newPCB->ppid = 4;
+    newPCB2->ppid = 4;
     newPCB2->state = READY;
     newPCB2->priority = 1;
     pcb_node* newNode2 = new_pcb_node(newPCB2);
 
+    // pcb* newPCB3 = (pcb *) malloc(sizeof(pcb));
+    // newPCB3->ucontext = ctx2;
+    // newPCB3->pid = 3;
+    // newPCB3->ppid = 4;
+    // newPCB3->state = READY;
+    // newPCB3->priority = 1;
+    // pcb_node* newNode3 = new_pcb_node(newPCB3);
+
     // add this process to the process queue
     enqueue_by_priority(ready_queue, MID, newNode);
     enqueue_by_priority(ready_queue, LOW, newNode2);
+    // enqueue_by_priority(ready_queue, HIGH, newNode3);
 
     scheduler_init();
     swapcontext(&main_context, &scheduler_context);

@@ -1,5 +1,5 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef FS_UTILS_H
+#define FS_UTILS_H
 
 #include <stdlib.h>
 #include <inttypes.h>

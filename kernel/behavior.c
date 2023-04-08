@@ -139,7 +139,7 @@ bool executeProgram(struct parsed_command *cmd) {
                 s_echo(cmd);
                 break;
             case LS:
-                // s_ls(cmd);
+                s_ls(cmd);
                 break;
             case TOUCH:
                 s_touch(cmd);
@@ -203,16 +203,16 @@ void s_echo(struct parsed_command *cmd) {
     
 }
 
-// void s_ls(struct parsed_command *cmd) {
-//     int count = argc(cmd);
-//     if (count == 1) {
-//         f_ls(".");
-//     } else if (count == 2) {
-//         f_ls(*cmd->commands[1]);
-//     } else {
-//         printf("ls: too many arguments\n");
-//     }
-// }
+void s_ls(struct parsed_command *cmd) {
+    int count = argc(cmd);
+    if (count == 1) {
+        f_ls(".");
+    } else if (count == 2) {
+        f_ls(*cmd->commands[1]);
+    } else {
+        printf("ls: too many arguments\n");
+    }
+}
 
 void s_touch(struct parsed_command *cmd) {
 

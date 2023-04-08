@@ -3,9 +3,14 @@
 
 JobList _jobList; // store all background job
 
-
 void shell_process() {
-    signal(SIGTTOU, SIG_IGN);
+    printf("shell process started\n");
+    printf("shell process started\n");
+    printf("shell process started\n");
+    printf("shell process started\n");
+    printf("shell process started\n");
+    printf("shell process started\n");
+    // signal(SIGTTOU, SIG_IGN);
     char *line = NULL;
     LineType lineType;
     while (true) {
@@ -55,7 +60,7 @@ int shell_init(int argc, const char **argv) {
     getcontext(&main_context);
     sigemptyset(&(main_context.uc_sigmask));
     set_stack(&(main_context.uc_stack));
-    main_context.uc_link = NULL;
+    main_context.uc_link = &scheduler_context;
 
     p_active_context = &main_context;
     active_process = NULL;
@@ -76,61 +81,24 @@ int shell_init(int argc, const char **argv) {
     terminal->ucontext.uc_link = &main_context;
     makecontext(&terminal->ucontext, shell_process, 0);
 
-
-    // printf("initializing context for testing\n");
-    // ucontext_t ctx1, ctx2;
-    // char stack1[8192], stack2[8192];
-    // // Initialize context 1
-    // getcontext(&ctx1);
-    // ctx1.uc_stack.ss_sp = stack1;
-    // ctx1.uc_stack.ss_size = sizeof(stack1);
-    // ctx1.uc_link = &scheduler_context;
-    // makecontext(&ctx1, foo, 0);
-
-    // // Initialize context 2
-    // getcontext(&ctx2);
-    // ctx2.uc_stack.ss_sp = stack2;
-    // ctx2.uc_stack.ss_size = sizeof(stack2);
-    // ctx2.uc_link = &scheduler_context;
-    // makecontext(&ctx2, bar, 0);
-
-    // printf("initializing PCBs for testing\n");
-    // pcb* newPCB = (pcb *) malloc(sizeof(pcb));
-    // newPCB->ucontext = ctx1;
-    // newPCB->pid = 1;
-    // newPCB->ppid = 4;
-    // newPCB->state = READY;
-    // newPCB->priority = 0;
-    // pcb_node* newNode = new_pcb_node(newPCB);
-
-    // pcb* newPCB2 = (pcb *) malloc(sizeof(pcb));
-    // newPCB2->ucontext = ctx2;
-    // newPCB2->pid = 2;
-    // newPCB->ppid = 4;
-    // newPCB2->state = READY;
-    // newPCB2->priority = 1;
-    // pcb_node* newNode2 = new_pcb_node(newPCB2);
-
-    // // add this process to the process queue
-    // enqueue(ready_queue->mid, newNode);
-    // enqueue(ready_queue->low, newNode2);
+    printf("shell process initialized\n");
 
     enqueue_by_priority(ready_queue, HIGH, terminal_node);
 
     return SUCCESS;
 }
 
-int main(int argc, char const *argv[])
-{
+// int main(int argc, char const *argv[])
+// {
 
-    // init system
-    // if (shell_init(argc, argv) == FAILURE) {
-    //     perror("failed to init shell");
-    //     return FAILURE;
-    // }
+//     // init system
+//     if (shell_init(argc, argv) == FAILURE) {
+//         perror("failed to init shell");
+//         return FAILURE;
+//     }
 
-    // swapcontext(&main_context, &scheduler_context);
-    // shell_process();
+//     // swapcontext(&main_context, &scheduler_context);
+//     shell_process();
 
-    return 0;
-}
+//     return 0;
+// }

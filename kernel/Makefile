@@ -6,15 +6,16 @@ CFLAGS = -Wall
 
 TOPDIR = $(PWD)
 # LOGFILE = \"$(TOPDIR)/log/log.txt\"
-override CPPFLAGS += -DLOGFILE=$(LOGFILE)
+# override CPPFLAGS += -DLOGFILE=$(LOGFILE)
 
 SRCS = $(filter-out main.c, $(wildcard *.c))
 OBJS = $(SRCS:.c=.o)
 
 .PHONY : all clean
 
-$(PROG) : $(OBJS)
-	$(CC) -o $@ $^ parser.o
+# $(PROG) : $(OBJS)
+# 	$(CC) -o $@ $^ parser.o
+all : $(OBJS)
 
 clean :
 	$(RM) $(OBJS) $(PROG)

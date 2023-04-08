@@ -52,7 +52,7 @@ void s_cat(struct parsed_command *cmd);
 void s_sleep(struct parsed_command *cmd);
 void s_busy(struct parsed_command *cmd);
 void s_echo(struct parsed_command *cmd);
-// void s_ls(struct parsed_command *cmd);
+void s_ls(struct parsed_command *cmd);
 void s_touch(struct parsed_command *cmd);
 void s_mv(struct parsed_command *cmd);
 void s_cp(struct parsed_command *cmd);

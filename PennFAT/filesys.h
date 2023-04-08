@@ -3,7 +3,16 @@
 
 #include "utils.h"
 #include "FAT.h"
+#include "fd-table.h"
 
+bool isFileSystemMounted();
+
+bool isValidFileName(const char *fileName);
+
+/* 
+Create a file system. 
+Return 0 if success.
+*/
 int fs_mkfs(const char *fsName, uint16_t blockSizeConfig, uint16_t FATRegionBlockNum);
 
 /* 
@@ -52,6 +61,9 @@ int fs_readFAT(int startBlock, int startBlockOffset, int size, char *buffer);
 Encapsulation of writeFAT() 
 Return 0 if success
 */
-int fs_writeFAT(int startBlock, int startBlockOffset, int size, char *buffer);
+int fs_writeFAT(int startBlock, int startBlockOffset, int size, const char *buffer);
+
+
+
 
 #endif

@@ -51,6 +51,11 @@ typedef struct FATConfig {
 
 #define DIRECTORY_END "0"
 #define DELETED_DIRECTORY "1"
+/*
+Process A and Process B opened the same file. 
+Process A unlinked the file but Process B was still using the file.
+The file should be deleted after Process B closes the file.
+*/
 #define DELETED_DIRECTORY_IN_USE "2"
 
 #define FILE_TYPE_UNKNOWN 0
@@ -125,13 +130,26 @@ int readDirectoryEntry(FATConfig *config, int offset, DirectoryEntry *dir);
 /* Write the directory entry to the offset. */
 int writeFileDirectory(FATConfig *config, int offset, DirectoryEntry *dir);
 
-int deleteFileDirectory(FATConfig *config, uint16_t *FAT16, const char *fileName);
+int deleteFileDirectory(FATConfig *config, uint16_t *FAT16, int directoryEntryOffset);
+
+int deleteFileDirectoryByName(FATConfig *config, uint16_t *FAT16, const char *fileName);
+
+bool isDirectoryEntryToDelete(FATConfig *config, int offset);
 
 int readFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, char *buffer);
 
-int writeFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, char *buffer);
+int writeFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, const char *buffer);
 
 /* Return the offset of the file end. */
 int traceFileEnd(FATConfig *config, uint16_t *FAT16, const char *fileName);
+
+/* Return the byte number from the file beginning to the file offset */
+int traceBytesFromBeginning(FATConfig *config, uint16_t *FAT16, int directoryEntryOffset, int fileOffset);
+
+/* Return the byte number from the file offset to the file end*/
+int traceBytesToEnd(FATConfig *config, uint16_t *FAT16, int directoryEntryOffset, int fileOffset);
+
+/* Return the offset of the n bytes after the given file offset*/
+int traceOffset(FATConfig *config, uint16_t *FAT16, int directoryEntryOffset, int fileOffset, int n);
 
 #endif

@@ -34,7 +34,7 @@ int pf_readFile(const char *fileName, int size, char *buffer) {
     return 0;
 }
 
-int pf_writeFile(const char *fileName, int size, char *buffer, PF_WRITEMODE mode) {
+int pf_writeFile(const char *fileName, int size, const char *buffer, PF_WRITEMODE mode) {
     if (pf_isMounted() == false) {
         printf("Error: No mounted file system.\n");
         return -1;
@@ -50,10 +50,10 @@ int pf_writeFile(const char *fileName, int size, char *buffer, PF_WRITEMODE mode
         directoryEntryOffset = fs_touch(fileName); // create a new file directory
     } else {
         if (mode == PF_OVERWRITE) {
-            deleteFileDirectory(fs_FATConfig, fs_FAT16InMemory, fileName); // delete the original file directory
+            deleteFileDirectoryByName(fs_FATConfig, fs_FAT16InMemory, fileName); // delete the original file directory
         }
         directoryEntryOffset = fs_touch(fileName);
-    } 
+    }
     
     readDirectoryEntry(fs_FATConfig, directoryEntryOffset, &dir);
     if (dir.firstBlock == NO_FIRST_BLOCK) {
@@ -206,7 +206,7 @@ int pf_catFiles(char **fileNames, int fileNum, int *size, char *buffer) {
     
     int dirEntryOffsets[fileNum];
     for (int i = 0; i < fileNum; i++) {
-        if ((strlen(fileNames[i]) > MAX_FILE_NAME_LENGTH)) {
+        if (isValidFileName(fileNames[i]) == false) {
             printf("Error: Invalid filename %s.\n", fileNames[i]);
             return -1;
         }
@@ -301,6 +301,7 @@ int parseInput(char *userInput, char **argsBuffer, int *argNum) {
     return EXECUTE_COMMAND;
 }
 
+/* 
 int main(int argc, char **argv) {
     printf("PennFAT is running... Ctrl+D to exit.\n");
     signal(SIGINT, SIGINTHandler);
@@ -344,7 +345,7 @@ int main(int argc, char **argv) {
                 } else {
                     int flag = 0;
                     for (int i = 1; i < argNum; i++) {
-                        if (strlen(argsBuffer[i]) > MAX_FILE_NAME_LENGTH) {
+                        if (isValidFileName(argsBuffer[i]) == false) {
                             printf("Error: Invalid File Name %s\n", argsBuffer[i]);
                             flag = 1;
                             break;
@@ -360,7 +361,7 @@ int main(int argc, char **argv) {
                 if (argNum != 3 ) {
                     printf("Error: Invalid Command\n");
                 } else {
-                    if ((strlen(argsBuffer[1]) > MAX_FILE_NAME_LENGTH) || (strlen(argsBuffer[2]) > MAX_FILE_NAME_LENGTH)) {
+                    if ((isValidFileName(argsBuffer[1]) == false) || (isValidFileName(argsBuffer[2]) == false)) {
                         printf("Error: Invalid File Name\n");
                     } else {
                         pf_mv(argsBuffer[1], argsBuffer[2]);
@@ -372,7 +373,7 @@ int main(int argc, char **argv) {
                 } else {
                     int invalid = 0;
                     for (int i = 1; i < argNum; i++) {
-                        if (strlen(argsBuffer[i]) > MAX_FILE_NAME_LENGTH) {
+                        if (isValidFileName(argsBuffer[i]) == false) {
                             printf("Error: Invalid File Name %s\n", argsBuffer[i]);
                             invalid = 1;
                             break;
@@ -440,7 +441,7 @@ int main(int argc, char **argv) {
                     int size = 0;
                     char *fileNames[PF_MAX_FILE_NUM];
                     for (int i = 1; i < argNum; i++) {
-                        if (strlen(argsBuffer[i]) > MAX_FILE_NAME_LENGTH) {
+                        if (isValidFileName(argsBuffer[i]) == false) {
                             printf("Error: Invalid File Name\n");
                             invalid = 1;
                             break;
@@ -457,7 +458,7 @@ int main(int argc, char **argv) {
                         printf("%s\n", buffer);
                     }
                 } else {
-                    if (strlen(argsBuffer[argNum-1]) > MAX_FILE_NAME_LENGTH) {
+                    if (isValidFileName(argsBuffer[argNum - 1]) == false) {
                         printf("Error: Invalid File Name\n");
                         continue;
                     }
@@ -478,7 +479,7 @@ int main(int argc, char **argv) {
                         int size = 0;
                         char *fileNames[PF_MAX_FILE_NUM];
                         for (int i = 1; i < argNum - 2; i++) {
-                            if (strlen(argsBuffer[i]) > MAX_FILE_NAME_LENGTH) {
+                            if (isValidFileName(argsBuffer[i]) == false) {
                                 printf("Error: Invalid File Name\n");
                                 invalid = 1;
                                 break;
@@ -532,7 +533,7 @@ int main(int argc, char **argv) {
                         printf("Error: Invalid Command\n");
                         continue;
                     }
-                    if ((strlen(argsBuffer[1]) > MAX_FILE_NAME_LENGTH) || (strlen(argsBuffer[2]) > MAX_FILE_NAME_LENGTH)) {
+                    if ((isValidFileName(argsBuffer[1]) == false) || (isValidFileName(argsBuffer[2]) == false)) {
                         printf("Error: Invalid File Name\n");
                     } else {
                         fs_cp(argsBuffer[1], argsBuffer[2]);
@@ -544,7 +545,7 @@ int main(int argc, char **argv) {
                     }
                     if (flagLocation == 1) {
                         char *dst = argsBuffer[3];
-                        if (strlen(dst) > MAX_FILE_NAME_LENGTH) {
+                        if (isValidFileName(dst) == false) {
                             printf("Error: Invalid File Name %s\n", dst);
                             continue;
                         }
@@ -563,7 +564,7 @@ int main(int argc, char **argv) {
 
                     } else if (flagLocation == 2) {
                         char *src = argsBuffer[1];
-                        if (strlen(src) > MAX_FILE_NAME_LENGTH) {
+                        if (isValidFileName(src) == false) {
                             printf("Error: Invalid File Name %s\n", src);
                             continue;
                         }
@@ -600,3 +601,5 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
+*/

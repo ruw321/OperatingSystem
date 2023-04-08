@@ -14,6 +14,28 @@ So the consistency of PennFAT may not be ensured.
 */
 uint16_t *fs_FAT16InMemory = NULL;
 
+FdTable fs_fdTable;
+
+bool isFileSystemMounted() {
+    if ((fs_FATConfig == NULL) || (fs_FAT16InMemory == NULL)) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+bool isValidFileName(const char *fileName) {
+    if ((strlen(fileName) > MAX_FILE_NAME_LENGTH) || (strlen(fileName) == 0)) {
+        return false;
+    }
+
+    if ((fileName[0] == DIRECTORY_END[0]) || (fileName[0] == DELETED_DIRECTORY[0]) || (fileName[0] == DELETED_DIRECTORY_IN_USE[0])) {
+        return false;
+    }
+
+    return true;
+}
+
 int fs_mkfs(const char *fsName, uint16_t blockSizeConfig, uint16_t FATRegionBlockNum) {
     FATConfig *config = createFATConfig(fsName, blockSizeConfig, FATRegionBlockNum);
     int res = createFATOnDisk(config);
@@ -51,6 +73,8 @@ int fs_mount(const char *fsName) {
         return FS_FAILURE;
     }
 
+    initFdTable(&fs_fdTable);
+
     #ifdef FS_DEBUG_INFO
     printf("File system %s is mounted.\n", fsName);
     printf("FAT Spec:\n- Block size: %d\n- FAT region: %d-byte\n- Data region: %d-byte\n", fs_FATConfig->blockSize, fs_FATConfig->FATRegionSize, fs_FATConfig->dataRegionSize);
@@ -74,6 +98,8 @@ int fs_unmount() {
     fs_FATConfig = NULL;
     fs_FAT16InMemory = NULL;
 
+    clearFdTable(&fs_fdTable);
+
     return FS_SUCCESS;
 }
 
@@ -83,7 +109,7 @@ int fs_touch(const char *fileName) {
         return FS_FAILURE;
     }
 
-    if (strlen(fileName) > MAX_FILE_NAME_LENGTH) {
+    if (isValidFileName(fileName) == false) {
         printf("Error: Invalid filename %s.\n", fileName);
         return FS_FAILURE;
     }
@@ -124,7 +150,7 @@ int fs_rm(const char *fileName) {
         return FS_FAILURE;
     }
 
-    if (strlen(fileName) > MAX_FILE_NAME_LENGTH) {
+    if (isValidFileName(fileName) == false) {
         printf("Error: Invalid filename %s.\n", fileName);
         return FS_FAILURE;
     }
@@ -135,7 +161,7 @@ int fs_rm(const char *fileName) {
         return FS_FAILURE;
     }
 
-    res = deleteFileDirectory(fs_FATConfig, fs_FAT16InMemory, fileName);
+    res = deleteFileDirectoryByName(fs_FATConfig, fs_FAT16InMemory, fileName);
     if (res == FS_FAILURE) {
         printf("Error: Fail to delete file directory %s from FAT\n", fileName);
     }
@@ -149,12 +175,12 @@ int fs_mv(const char *src, const char *dst) {
         return FS_FAILURE;
     }
 
-    if ((strlen(src) > MAX_FILE_NAME_LENGTH)) {
+    if (isValidFileName(src) == false) {
         printf("Error: Invalid filename %s.\n", src);
         return FS_FAILURE;
     }
 
-    if (strlen(dst) > MAX_FILE_NAME_LENGTH) {
+    if (isValidFileName(dst) == false) {
         printf("Error: Invalid filename %s.\n", dst);
         return FS_FAILURE;
     }
@@ -170,7 +196,7 @@ int fs_mv(const char *src, const char *dst) {
     }
 
     /* Remove dst from FAT. */
-    deleteFileDirectory(fs_FATConfig, fs_FAT16InMemory, dst);
+    deleteFileDirectoryByName(fs_FATConfig, fs_FAT16InMemory, dst);
 
     char buffer[MAX_FILE_NAME_LENGTH];
     memset(buffer, '\0', MAX_FILE_NAME_LENGTH);
@@ -194,12 +220,12 @@ int fs_cp(const char *src, const char *dst) {
         return FS_FAILURE;
     }
 
-    if (strlen(src) > MAX_FILE_NAME_LENGTH) {
+    if (isValidFileName(src) == false) {
         printf("Error: Invalid filename %s.\n", src);
         return FS_FAILURE;
     }
 
-    if (strlen(dst) > MAX_FILE_NAME_LENGTH) {
+    if (isValidFileName(dst) == false) {
         printf("Error: Invalid filename %s.\n", dst);
         return FS_FAILURE;
     }
@@ -215,7 +241,7 @@ int fs_cp(const char *src, const char *dst) {
     }
 
     /* Remove dst from FAT. */
-    deleteFileDirectory(fs_FATConfig, fs_FAT16InMemory, dst);
+    deleteFileDirectoryByName(fs_FATConfig, fs_FAT16InMemory, dst);
     int dstDirectoryEntryOffset = fs_touch(dst);
 
     DirectoryEntry srcDir;
@@ -280,7 +306,7 @@ int fs_readFAT(int startBlock, int startBlockOffset, int size, char *buffer) {
     return readFAT(fs_FATConfig, fs_FAT16InMemory, startBlock, startBlockOffset, size, buffer);
 }
 
-int fs_writeFAT(int startBlock, int startBlockOffset, int size, char *buffer) {
+int fs_writeFAT(int startBlock, int startBlockOffset, int size, const char *buffer) {
     if ((fs_FATConfig == NULL) || (fs_FAT16InMemory == NULL)) {
         printf("Error: No mounted file system.\n");
         return FS_FAILURE;

@@ -20,7 +20,7 @@ bool pf_isMounted();
 
 int pf_readFile(const char *fileName, int size, char *buffer);
 
-int pf_writeFile(const char *fileName, int size, char *buffer, PF_WRITEMODE mode);
+int pf_writeFile(const char *fileName, int size, const char *buffer, PF_WRITEMODE mode);
 
 int pf_mkfs(const char *fsName, int BLOCKS_IN_FAT, int BLOCK_SIZE_CONFIG);
 

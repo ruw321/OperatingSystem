@@ -10,8 +10,8 @@ CC = clang
 #
 CFLAGS = -Wall -Werror -O1
 
-# SRCS = $(filter-out test-playground.c, $(wildcard *.c))
-SRCS = $(wildcard *.c)
+SRCS = $(filter-out test-playground.c, $(wildcard *.c))
+# SRCS = $(wildcard *.c)
 
 OBJS = $(SRCS:.c=.o)
 

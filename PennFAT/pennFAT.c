@@ -58,6 +58,10 @@ int pf_writeFile(const char *fileName, int size, const char *buffer, PF_WRITEMOD
     readDirectoryEntry(fs_FATConfig, directoryEntryOffset, &dir);
     if (dir.firstBlock == NO_FIRST_BLOCK) {
         startBlock = findEmptyFAT16Entry(fs_FATConfig, fs_FAT16InMemory);
+        if (startBlock == FS_NOT_FOUND) {
+            printf("Error: The filesystem is full. No empty data block.\n");
+            return -1;
+        }
         startBlockOffset = 0;
         fs_FAT16InMemory[startBlock] = NO_SUCC_FAT_ENTRY;
         dir.firstBlock = (uint16_t) startBlock;
@@ -301,7 +305,7 @@ int parseInput(char *userInput, char **argsBuffer, int *argNum) {
     return EXECUTE_COMMAND;
 }
 
-/* 
+// /* 
 int main(int argc, char **argv) {
     printf("PennFAT is running... Ctrl+D to exit.\n");
     signal(SIGINT, SIGINTHandler);
@@ -310,6 +314,7 @@ int main(int argc, char **argv) {
     char *argsBuffer[MAX_ARGS_NUM] = {NULL};
     int argNum = 0;
     while (1) {
+        write(STDERR_FILENO, "pennfat# ", 9);
         char *userInput = readInput(inputBuffer);
         int parseResult = parseInput(userInput, argsBuffer, &argNum);
         if (parseResult == EXIT_SHREDDER) {
@@ -602,4 +607,4 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-*/
+// */

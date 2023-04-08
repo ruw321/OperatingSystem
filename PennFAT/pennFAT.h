@@ -4,7 +4,7 @@
 #include "filesys.h"
 #include "signal.h"
 
-#define PF_MAX_BUFFER_SIZE 10000
+#define PF_MAX_BUFFER_SIZE 32512
 #define PF_MAX_FILE_NUM 4
 
 extern FATConfig *fs_FATConfig;

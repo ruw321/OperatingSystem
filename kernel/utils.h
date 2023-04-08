@@ -11,6 +11,7 @@
 #include <time.h>
 #include <valgrind/valgrind.h> 
 #include "global2.h"
+#include "../PennFAT/fd-table.h"
 
 typedef struct pcb {
     ucontext_t ucontext;
@@ -21,6 +22,7 @@ typedef struct pcb {
     int priority;
     int input_fd;
     int output_fd;
+    FdNode *fds[MAX_FILE_DESCRIPTOR];   // keep track of open FDs
     int ticks_to_reach;     // > 1 represents the wait times, -1 means parent is waiting
     struct pcb_queue* children;     // processes that have not completed yet
     struct pcb_queue* zombies;      // processes that are completed but the parent has not waited for it yet

@@ -10,6 +10,11 @@ pcb* new_pcb(ucontext_t* ucontext, pid_t pid) {
     pcb_n->zombies = new_pcb_queue();
     pcb_n->ticks_to_reach = 0;
     pcb_n->priority = 0;
+
+    for (int i = 0; i < MAX_FILE_DESCRIPTOR; i++) {
+        pcb_n->fds[i] = NULL;
+    }
+
     return pcb_n;
 }
 

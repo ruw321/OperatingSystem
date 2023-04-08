@@ -88,7 +88,6 @@ pcb* next_process() {
 
 
 void scheduler() {
-    
 
     // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
@@ -296,7 +295,7 @@ int main(int argc, char const *argv[])
     newPCB2->pid = 2;
     newPCB2->ppid = 4;
     newPCB2->state = READY;
-    newPCB2->priority = 1;
+    newPCB2->priority = 0;
     pcb_node* newNode2 = new_pcb_node(newPCB2);
 
     // pcb* newPCB3 = (pcb *) malloc(sizeof(pcb));
@@ -309,7 +308,7 @@ int main(int argc, char const *argv[])
 
     // add this process to the process queue
     enqueue_by_priority(ready_queue, MID, newNode);
-    enqueue_by_priority(ready_queue, LOW, newNode2);
+    enqueue_by_priority(ready_queue, MID, newNode2);
     // enqueue_by_priority(ready_queue, HIGH, newNode3);
 
     scheduler_init();

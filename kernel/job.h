@@ -54,6 +54,7 @@ extern JobList _jobList; // store all background job
 void printCommandLine(struct parsed_command *cmd);
 void writeJobStatePrompt(JobState state);
 void writeJobState(Job *job);
+void writeNewline();
 
 /* Reap zombie processes synchronously */
 void pollBackgroundProcesses();

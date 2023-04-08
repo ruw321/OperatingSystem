@@ -64,6 +64,13 @@ void writeJobState(Job *job) {
     printCommandLine(job->cmd);
 }
 
+void writeNewline() {
+    if (write(STDERR_FILENO, "\n", 1) == -1) {
+        perror("Failed to write the newline.");
+        exit(EXIT_FAILURE);
+    }
+}
+
 /* Externally reap zombie processes by calling poll everytime the shell reads */
 void pollBackgroundProcesses() {
     /* polling consumes CPU cycles, we only poll once for each shell read */
@@ -533,7 +540,7 @@ void bgBuildinCommand(struct parsed_command *cmd) {
         printf("ERROR: failed to find the stopped job\n");
     } else {
         killpg(job->pgpid, SIGCONT);
-        job->state = RUNNING;
+        job->state = JOB_RUNNING;
         writeJobState(job);
     }
 }
@@ -561,7 +568,7 @@ void fgBuildinCommand(struct parsed_command *cmd) {
         pid_t pgpid = job->pgpid;
         tcsetpgrp(STDIN_FILENO, pgpid); // delegate the terminal control
         killpg(pgpid, SIGCONT);
-        job->state = RUNNING;
+        job->state = JOB_RUNNING;
 
         bool isStopped = false;
         bool isKilled = false;
@@ -570,7 +577,7 @@ void fgBuildinCommand(struct parsed_command *cmd) {
             int wstatus;
             do {
                 // if (waitpid(job->pids[i], &wstatus, WUNTRACED | WCONTINUED) > 0) {
-                if (waitpid(job->pids[i], &wstatus, false) > 0) {
+                if (p_waitpid(job->pids[i], &wstatus, false) > 0) {
                     if (WIFSIGNALED(wstatus)) isKilled = true;
                     if (WIFSTOPPED(wstatus)) isStopped = true;
                 }
@@ -584,7 +591,7 @@ void fgBuildinCommand(struct parsed_command *cmd) {
             struct parsed_command *cmd = job->cmd;
             pid_t *pids = job->pids;
             removeJobListWithoutFreeCmdAndPids(&_jobList, pgpid);
-            Job *newBackgroundJob = createJob(cmd, pids, STOPPED);
+            Job *newBackgroundJob = createJob(cmd, pids, JOB_STOPPED);
             appendJobList(&_jobList, newBackgroundJob);
             writeNewline();
             writeJobState(newBackgroundJob);

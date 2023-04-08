@@ -15,13 +15,6 @@ void writePrompt() {
     }
 }
 
-void writeNewline() {
-    if (write(STDERR_FILENO, "\n", 1) == -1) {
-        perror("Failed to write the newline.");
-        exit(EXIT_FAILURE);
-    }
-}
-
 void readUserInput(char **line) {
     char inputBuffer[MAX_LINE_LENGTH];
     int numBytes = read(STDIN_FILENO, inputBuffer, MAX_LINE_LENGTH);
@@ -93,33 +86,33 @@ int parseLine(char *line, struct parsed_command **cmd) {
 }
 
 ProgramType isKnownProgram(struct parsed_command *cmd) {
-    if (strcmp(cmd->commands[0], "cat") == 0) {
+    if (strcmp(*cmd->commands[0], "cat") == 0) {
         return CAT;
-    } else if (strcmp(cmd->commands[0], "sleep") == 0) {
+    } else if (strcmp(*cmd->commands[0], "sleep") == 0) {
         return SLEEP;
-    } else if (strcmp(cmd->commands[0], "busy") == 0) {
+    } else if (strcmp(*cmd->commands[0], "busy") == 0) {
         return BUSY;
-    } else if (strcmp(cmd->commands[0], "echo") == 0) {
+    } else if (strcmp(*cmd->commands[0], "echo") == 0) {
         return ECHO;
-    } else if (strcmp(cmd->commands[0], "ls") == 0) {
+    } else if (strcmp(*cmd->commands[0], "ls") == 0) {
         return LS;
-    } else if (strcmp(cmd->commands[0], "touch") == 0) {
+    } else if (strcmp(*cmd->commands[0], "touch") == 0) {
         return TOUCH;
-    } else if (strcmp(cmd->commands[0], "mv") == 0) {
+    } else if (strcmp(*cmd->commands[0], "mv") == 0) {
         return MV;
-    } else if (strcmp(cmd->commands[0], "cp") == 0) {
+    } else if (strcmp(*cmd->commands[0], "cp") == 0) {
         return CP;
-    } else if (strcmp(cmd->commands[0], "rm") == 0) {
+    } else if (strcmp(*cmd->commands[0], "rm") == 0) {
         return RM;
-    } else if (strcmp(cmd->commands[0], "chmod") == 0) {
+    } else if (strcmp(*cmd->commands[0], "chmod") == 0) {
         return CHMOD;
-    } else if (strcmp(cmd->commands[0], "ps") == 0) {
+    } else if (strcmp(*cmd->commands[0], "ps") == 0) {
         return PS;
-    } else if (strcmp(cmd->commands[0], "kill") == 0) {
+    } else if (strcmp(*cmd->commands[0], "kill") == 0) {
         return KILL;
-    } else if (strcmp(cmd->commands[0], "zombify") == 0) {
+    } else if (strcmp(*cmd->commands[0], "zombify") == 0) {
         return ZOMBIFY;
-    } else if (strcmp(cmd->commands[0], "orphanify") == 0) {
+    } else if (strcmp(*cmd->commands[0], "orphanify") == 0) {
         return ORPHANIFY;
     } else {
         return UNKNOWN;
@@ -146,7 +139,7 @@ bool executeProgram(struct parsed_command *cmd) {
                 s_echo(cmd);
                 break;
             case LS:
-                s_ls(cmd);
+                // s_ls(cmd);
                 break;
             case TOUCH:
                 s_touch(cmd);
@@ -193,9 +186,9 @@ void s_sleep(struct parsed_command *cmd) {
     } else if (cmd->num_commands > 2) {
         printf("sleep: too many arguments\n");
     } else {
-        int sleepTime = atoi(cmd->commands[1]) * 10;
+        int sleepTime = atoi(*cmd->commands[1]) * 10;
         if (sleepTime == 0) {
-            printf("sleep: invalid time interval '%s'\n", cmd->commands[1]);
+            printf("sleep: invalid time interval '%s'\n", *cmd->commands[1]);
         } else {
             p_sleep(sleepTime);
         }
@@ -207,19 +200,19 @@ void s_busy(struct parsed_command *cmd) {
 }
 
 void s_echo(struct parsed_command *cmd) {
-    int count = argc(cmd);
+    
 }
 
-void s_ls(struct parsed_command *cmd) {
-    int count = argc(cmd);
-    if (count == 1) {
-        f_ls(".");
-    } else if (count == 2) {
-        f_ls(cmd->commands[1]);
-    } else {
-        printf("ls: too many arguments\n");
-    }
-}
+// void s_ls(struct parsed_command *cmd) {
+//     int count = argc(cmd);
+//     if (count == 1) {
+//         f_ls(".");
+//     } else if (count == 2) {
+//         f_ls(*cmd->commands[1]);
+//     } else {
+//         printf("ls: too many arguments\n");
+//     }
+// }
 
 void s_touch(struct parsed_command *cmd) {
 
@@ -250,35 +243,35 @@ void s_kill(struct parsed_command *cmd) {
     if (count == 1) {
         printf("kill: missing operand (kill what?)\n");
     } else if (count == 2) {
-        if (p_kill(atoi(cmd->commands[1]), S_SIGTERM) == -1) {
-            printf("kill: invalid process id '%s'\n", cmd->commands[1]);
+        if (p_kill(atoi(*cmd->commands[1]), S_SIGTERM) == -1) {
+            printf("kill: invalid process id '%s'\n", *cmd->commands[1]);
         }
     } else {
         int signal = S_SIGTERM;
-        if (strcmp(cmd->commands[1], "term") == 0) {
+        if (strcmp(*cmd->commands[1], "term") == 0) {
             for (int i = 2; i < count; i++) {
-                if (p_kill(atoi(cmd->commands[i]), signal) == -1) {
-                    printf("kill: invalid process id '%s'\n", cmd->commands[i]);
+                if (p_kill(atoi(*cmd->commands[i]), signal) == -1) {
+                    printf("kill: invalid process id '%s'\n", *cmd->commands[i]);
                 }
             }
-        } else if (strcmp(cmd->commands[1], "stop") == 0) {
+        } else if (strcmp(*cmd->commands[1], "stop") == 0) {
             signal = S_SIGSTOP;
             for (int i = 2; i < count; i++) {
-                if (p_kill(atoi(cmd->commands[i]), signal) == -1) {
-                    printf("kill: invalid process id '%s'\n", cmd->commands[i]);
+                if (p_kill(atoi(*cmd->commands[i]), signal) == -1) {
+                    printf("kill: invalid process id '%s'\n", *cmd->commands[i]);
                 }
             }
-        } else if (strcmp(cmd->commands[1], "cont") == 0) {
+        } else if (strcmp(*cmd->commands[1], "cont") == 0) {
             signal = S_SIGCONT;
             for (int i = 2; i < count; i++) {
-                if (p_kill(atoi(cmd->commands[i]), signal) == -1) {
-                    printf("kill: invalid process id '%s'\n", cmd->commands[i]);
+                if (p_kill(atoi(*cmd->commands[i]), signal) == -1) {
+                    printf("kill: invalid process id '%s'\n", *cmd->commands[i]);
                 }
             }
         } else {
             for (int i = 1; i < count; i++) {
-                if (p_kill(atoi(cmd->commands[i]), signal) == -1) {
-                    printf("kill: invalid process id '%s'\n", cmd->commands[i]);
+                if (p_kill(atoi(*cmd->commands[i]), signal) == -1) {
+                    printf("kill: invalid process id '%s'\n", *cmd->commands[i]);
                 }
             }
         }

@@ -5,7 +5,8 @@
 #include "job.h"
 #include "user.h"
 #include "behavior.h"
-#include "../PennFAT/filesysInterface.h"
+#include "../PennFAT/filesys.h"
+#include "../PennFAT/interface.h"
 
 void shell_process();
 

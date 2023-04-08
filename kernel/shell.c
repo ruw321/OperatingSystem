@@ -1,7 +1,7 @@
 #include "shell.h"
 #include "scheduler.h"
 
-// JobList _jobList; // store all background job
+JobList _jobList; // store all background job
 
 
 void shell_process() {
@@ -46,7 +46,7 @@ int shell_init(int argc, const char **argv) {
         return FAILURE;
     }
     // fs_mount(argv[1]);
-    // initJobList(&_jobList);
+    initJobList(&_jobList);
     if (scheduler_init() == FAILURE ) {
         return FAILURE;
     }
@@ -130,7 +130,7 @@ int main(int argc, char const *argv[])
     // }
 
     // swapcontext(&main_context, &scheduler_context);
-    shell_process();
+    // shell_process();
 
     return 0;
 }

@@ -59,8 +59,8 @@ int shell_init(int argc, const char **argv) {
     set_stack(&(main_context.uc_stack));
     main_context.uc_link = NULL;
 
-    p_active_context = &main_context;
-    active_process = NULL;
+    active_process = new_pcb(&main_context, lastPID++);
+    p_active_context = NULL;
 
     // init shell ucontext
     ucontext_t shell_context;
@@ -73,14 +73,10 @@ int shell_init(int argc, const char **argv) {
         return FAILURE;
     }
 
-    pcb *shell_pcb = malloc(sizeof(pcb));
-    shell_pcb->pid = lastPID ++;
-    shell_pcb->ppid = 0;
-    shell_pcb->state = READY;
-    shell_pcb->ucontext = shell_context;
-    shell_pcb->priority = HIGH;
+    pcb *shell_pcb = new_pcb(&shell_context,lastPID++);
+    shell_pcb->priority = -1;   // the default is 0, but we want -1
 
-    pcb_node *shell_node = malloc(sizeof(pcb_node));
+    pcb_node *shell_node = new_pcb_node(shell_pcb);
 
     enqueue_by_priority(ready_queue, HIGH, shell_node);
 

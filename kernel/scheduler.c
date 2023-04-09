@@ -66,7 +66,7 @@ pcb* next_process() {
 
         if (chosen_queue->head->pcb->ticks_to_reach <= tick_tracker) {
             if (chosen_queue->head->pcb->ticks_to_reach > 0) {
-                process_unblock(chosen_queue->head->pcb->pid);
+                unblock_process(chosen_queue->head->pcb->pid);
             }
             return chosen_queue->head->pcb;
         } else {
@@ -125,7 +125,7 @@ void scheduler() {
                 if (parent != NULL) {
                     // if the parent is blocked waiting for it, unblock the parent
                     if (parent->pcb->ticks_to_reach == -1) {
-                        if (process_unblock(active_process->ppid) == -1) {
+                        if (unblock_process(active_process->ppid) == -1) {
                             printf("failed to unblock the parent\n");
                         }
                     }

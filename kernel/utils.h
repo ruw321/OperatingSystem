@@ -26,7 +26,6 @@ typedef struct pcb {
     int ticks_to_reach;     // > 1 represents the wait times, -1 means parent is waiting
     struct pcb_queue* children;     // processes that have not completed yet
     struct pcb_queue* zombies;      // processes that are completed but the parent has not waited for it yet
-    // TODO: other fields to be added
 } pcb;
 
 typedef struct pcb_node {

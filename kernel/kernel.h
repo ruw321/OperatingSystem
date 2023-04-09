@@ -37,5 +37,3 @@ int unblock_process(pid_t pid);
 // TODO: ADD LOGIC (probably change to other files)
 bool is_foreground(pid_t pid);
 
-// unblock a process
-int process_unblock(pid_t pid);

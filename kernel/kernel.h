@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "global.h"
 
+extern ucontext_t scheduler_context;
 extern pid_t lastPID;
 extern priority_queue* ready_queue;
 extern bool stopped_by_timer;
@@ -23,6 +24,18 @@ int k_process_cleanup(pcb *process);
 
 // initialize kernel 
 int kernel_init();
+
+// deconstruct kernel 
+void kernel_deconstruct();
+
+// block a process, add the process to stopped queue
+int block_process(pid_t pid);
+
+// unblock a process, add the process to ready queue
+int unblock_process(pid_t pid);
+
+// TODO: ADD LOGIC (probably change to other files)
+bool is_foreground(pid_t pid);
 
 // unblock a process
 int process_unblock(pid_t pid);

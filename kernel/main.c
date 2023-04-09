@@ -11,8 +11,9 @@ int main(int argc, char const *argv[])
         return FAILURE;
     }
 
-    // swapcontext(&main_context, &scheduler_context);
-    shell_process();
+    swapcontext(&main_context, &scheduler_context);
+    // shell_process();
 
     return 0;
 }
+

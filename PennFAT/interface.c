@@ -1,8 +1,6 @@
 #include "interface.h"
 #include "filesys.h"
 
-#include "pcb.h"
-
 extern FATConfig *fs_FATConfig;
 extern uint16_t *fs_FAT16InMemory;
 extern FdTable fs_fdTable;

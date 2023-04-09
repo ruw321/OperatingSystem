@@ -16,6 +16,8 @@
 #define F_SUCCESS 0
 #define F_FAILURE -1
 
+#include "../kernel/utils.h"
+
 int f_open(const char *fname, int mode);
 
 int f_close(int fd);

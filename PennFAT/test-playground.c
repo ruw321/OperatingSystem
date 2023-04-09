@@ -1,6 +1,6 @@
 #include "interface.h"
 #include "pennFAT.h"
-#include "pcb.h"
+
 
 extern pcb *active_process;
 

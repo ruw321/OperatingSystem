@@ -52,38 +52,43 @@ int shell_init(int argc, const char **argv) {
     }
     // fs_mount(argv[1]);
     initJobList(&_jobList);
-    if (scheduler_init() == FAILURE ) {
-        return FAILURE;
-    }
 
     // initialize main context
     getcontext(&main_context);
     sigemptyset(&(main_context.uc_sigmask));
     set_stack(&(main_context.uc_stack));
-    main_context.uc_link = &scheduler_context;
+    main_context.uc_link = NULL;
 
     p_active_context = &main_context;
     active_process = NULL;
 
     // init shell ucontext
-    pcb *terminal = malloc(sizeof(pcb));
-    terminal->pid = lastPID ++;
-    terminal->ppid = 0;
-    terminal->state = READY;
-    terminal->priority = 0;
+    ucontext_t shell_context;
+    getcontext(&shell_context);
+    sigemptyset(&(shell_context.uc_sigmask));
+    set_stack(&(shell_context.uc_stack));
+    shell_context.uc_link = &main_context;
 
-    pcb_node *terminal_node = new_pcb_node(terminal);
+    if (makeContext(&shell_context, shell_process, 0, NULL, NULL) == FAILURE) {
+        return FAILURE;
+    }
 
-    getcontext(&terminal->ucontext);
-    set_stack(&(terminal->ucontext.uc_stack));
-    
-    sigemptyset(&(terminal->ucontext.uc_sigmask));
-    terminal->ucontext.uc_link = &main_context;
-    makecontext(&terminal->ucontext, shell_process, 0);
+    pcb *shell_pcb = malloc(sizeof(pcb));
+    shell_pcb->pid = lastPID ++;
+    shell_pcb->ppid = 0;
+    shell_pcb->state = READY;
+    shell_pcb->ucontext = shell_context;
+    shell_pcb->priority = HIGH;
+
+    pcb_node *shell_node = malloc(sizeof(pcb_node));
+
+    enqueue_by_priority(ready_queue, HIGH, shell_node);
+
+    if (scheduler_init() == FAILURE ) {
+        return FAILURE;
+    }
 
     printf("shell process initialized\n");
-
-    enqueue_by_priority(ready_queue, HIGH, terminal_node);
 
     return SUCCESS;
 }

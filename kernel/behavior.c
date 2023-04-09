@@ -5,7 +5,7 @@ int argc(struct parsed_command *cmd) {
     while (cmd->commands[count] != NULL) {
         count++;
     }
-    return count;
+    return count-1;
 }
 
 void writePrompt() {
@@ -181,9 +181,10 @@ void s_cat(struct parsed_command *cmd) {
 }
 
 void s_sleep(struct parsed_command *cmd) {
-    if (cmd->num_commands == 1) {
+    int count = argc(cmd);
+    if (count == 1) {
         printf("sleep: missing operand (sleep for how long?)\n");
-    } else if (cmd->num_commands > 2) {
+    } else if (count > 2) {
         printf("sleep: too many arguments\n");
     } else {
         int sleepTime = atoi(*cmd->commands[1]) * 10;

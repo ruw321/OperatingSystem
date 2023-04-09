@@ -4,13 +4,8 @@
 JobList _jobList; // store all background job
 
 void shell_process() {
-    printf("shell process started\n");
-    printf("shell process started\n");
-    printf("shell process started\n");
-    printf("shell process started\n");
-    printf("shell process started\n");
-    printf("shell process started\n");
-    // signal(SIGTTOU, SIG_IGN);
+    printf("Shell process started\n");
+    signal(SIGTTOU, SIG_IGN);
     char *line = NULL;
     LineType lineType;
     while (true) {
@@ -50,6 +45,11 @@ int shell_init(int argc, const char **argv) {
     if (kernel_init() == FAILURE ) {
         return FAILURE;
     }
+
+    if (scheduler_init() == FAILURE ) {
+        return FAILURE;
+    }
+
     // fs_mount(argv[1]);
     initJobList(&_jobList);
 
@@ -60,7 +60,7 @@ int shell_init(int argc, const char **argv) {
     main_context.uc_link = NULL;
 
     active_process = new_pcb(&main_context, lastPID++);
-    p_active_context = NULL;
+    p_active_context = &main_context;
 
     // init shell ucontext
     ucontext_t shell_context;
@@ -73,16 +73,12 @@ int shell_init(int argc, const char **argv) {
         return FAILURE;
     }
 
-    pcb *shell_pcb = new_pcb(&shell_context,lastPID++);
+    pcb *shell_pcb = new_pcb(&shell_context, lastPID++);
     shell_pcb->priority = -1;   // the default is 0, but we want -1
 
     pcb_node *shell_node = new_pcb_node(shell_pcb);
 
     enqueue_by_priority(ready_queue, HIGH, shell_node);
-
-    if (scheduler_init() == FAILURE ) {
-        return FAILURE;
-    }
 
     printf("shell process initialized\n");
 

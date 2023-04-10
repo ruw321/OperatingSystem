@@ -16,7 +16,7 @@ void shell_process() {
         lineType = readAndParseUserInput(&line);
 
         // Reap zombie processes synchronously
-        pollBackgroundProcesses();
+        // pollBackgroundProcesses();
         
         if (lineType == EXIT_SHELL) {
             return;
@@ -26,14 +26,10 @@ void shell_process() {
         }
         else {
             struct parsed_command *cmd;
-            int res = parseLine(line, &cmd);
-            if (res == 0) {
-                if (executeBuiltinCommand(cmd) == false) {
-                    if (executeLine(cmd) == false) {
-                        printf("Error in executeProgram\n");
-                    }
-                }  
-            }
+            parseLine(line, &cmd);
+            int wstatus;
+            pid_t pid = p_spawn(s_ls, cmd->commands[0], 0, 1);
+            p_waitpid(pid, &wstatus, false);
         }
         free(line);
 

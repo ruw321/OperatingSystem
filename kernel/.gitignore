@@ -1,3 +1,2 @@
 *.o
-!parser.o
 pennOS

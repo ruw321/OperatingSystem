@@ -25,10 +25,10 @@ PROG = pennOS
 
 all : $(PROG) $(FS_PROG)
 $(PROG) : $(SUBDIRS)
-	$(CC) ${CFLAGS} -lm -o $@ $(MAIN) $(KERNEL_OBJS) $(FS_SRCS) $(KERNEL_DIR)/parser.o
+	$(CC) ${CFLAGS} -lm -o $@ $(MAIN) $(KERNEL_OBJS) $(FS_SRCS)
 
 $(FS_PROG) : $(FS_SRCS)
-	$(CC) ${CFLAGS} -lm -o $@ $(FS_MAIN) $(FS_SRCS) $(KERNEL_OBJS) $(KERNEL_DIR)/parser.o
+	$(CC) ${CFLAGS} -lm -o $@ $(FS_MAIN) $(FS_SRCS) $(KERNEL_OBJS)
 
 $(SUBDIRS) :
 	$(MAKE) -C $@

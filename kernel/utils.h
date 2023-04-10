@@ -20,8 +20,10 @@ typedef struct pcb {
     enum process_state prev_state;
     enum process_state state;       // state of the process
     int priority;
+    // TODO: unused
     int input_fd;
     int output_fd;
+    
     FdNode *fds[MAX_FILE_DESCRIPTOR];   // keep track of open FDs
     int ticks_to_reach;     // > 1 represents the wait times, -1 means parent is waiting
     struct pcb_queue* children;     // processes that have not completed yet

@@ -6,6 +6,7 @@
 
 #include "job.h"
 #include "../PennFAT/interface.h"
+#include "programs.h"
 
 typedef enum {
     EXIT_SHELL,
@@ -44,23 +45,9 @@ int parseLine(char *line, struct parsed_command **cmd);
 
 
 /* Execute a user program */
-ProgramType isKnownProgram(struct parsed_command *cmd);
-bool executeProgram(struct parsed_command *cmd);
-
-/* Known user programs */
-void s_cat(struct parsed_command *cmd);
-void s_sleep(struct parsed_command *cmd);
-void s_busy(struct parsed_command *cmd);
-void s_echo(struct parsed_command *cmd);
-void s_ls(struct parsed_command *cmd);
-void s_touch(struct parsed_command *cmd);
-void s_mv(struct parsed_command *cmd);
-void s_cp(struct parsed_command *cmd);
-void s_rm(struct parsed_command *cmd);
-void s_chmod(struct parsed_command *cmd);
-void s_ps(struct parsed_command *cmd);
-void s_kill(struct parsed_command *cmd);
-void s_zombify(struct parsed_command *cmd);
-void s_orphanify(struct parsed_command *cmd);
+ProgramType isKnownProgram(char *argv);
+bool executeLine(struct parsed_command *cmd);
+bool handleRedirection(struct parsed_command *cmd, pid_t *pids);
+bool executeProgram(char **argv, int fd_in, int fd_out);
 
 #endif

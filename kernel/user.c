@@ -1,6 +1,7 @@
 #include "user.h"
 
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
+    printf("p_spawn started\n");
     // forks a new thread that retains most of the attributes of the parent thread 
     pcb* pcb = k_process_create(active_process);
     if (pcb == NULL) {
@@ -21,6 +22,8 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     enqueue(ready_queue->mid, newNode);
     // add to the children list for the parent
     enqueue(active_process->children, newNode);
+
+    printf("p_spawn finished\n");
 
     return pcb->pid;
 }

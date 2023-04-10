@@ -1,13 +1,5 @@
 #include "behavior.h"
 
-int argc(struct parsed_command *cmd) {
-    int count = 0;
-    while (cmd->commands[count] != NULL) {
-        count++;
-    }
-    return count-1;
-}
-
 void writePrompt() {
     if (write(STDERR_FILENO, PROMPT, strlen(PROMPT)) == -1) {
         perror("Failed to write the prompt.");
@@ -85,204 +77,206 @@ int parseLine(char *line, struct parsed_command **cmd) {
     return res;
 }
 
-ProgramType isKnownProgram(struct parsed_command *cmd) {
-    if (strcmp(*cmd->commands[0], "cat") == 0) {
+ProgramType isKnownProgram(char *argv) {
+    if (strcmp(argv, "cat") == 0) {
         return CAT;
-    } else if (strcmp(*cmd->commands[0], "sleep") == 0) {
+    } else if (strcmp(argv, "sleep") == 0) {
         return SLEEP;
-    } else if (strcmp(*cmd->commands[0], "busy") == 0) {
+    } else if (strcmp(argv, "busy") == 0) {
         return BUSY;
-    } else if (strcmp(*cmd->commands[0], "echo") == 0) {
+    } else if (strcmp(argv, "echo") == 0) {
         return ECHO;
-    } else if (strcmp(*cmd->commands[0], "ls") == 0) {
+    } else if (strcmp(argv, "ls") == 0) {
         return LS;
-    } else if (strcmp(*cmd->commands[0], "touch") == 0) {
+    } else if (strcmp(argv, "touch") == 0) {
         return TOUCH;
-    } else if (strcmp(*cmd->commands[0], "mv") == 0) {
+    } else if (strcmp(argv, "mv") == 0) {
         return MV;
-    } else if (strcmp(*cmd->commands[0], "cp") == 0) {
+    } else if (strcmp(argv, "cp") == 0) {
         return CP;
-    } else if (strcmp(*cmd->commands[0], "rm") == 0) {
+    } else if (strcmp(argv, "rm") == 0) {
         return RM;
-    } else if (strcmp(*cmd->commands[0], "chmod") == 0) {
+    } else if (strcmp(argv, "chmod") == 0) {
         return CHMOD;
-    } else if (strcmp(*cmd->commands[0], "ps") == 0) {
+    } else if (strcmp(argv, "ps") == 0) {
         return PS;
-    } else if (strcmp(*cmd->commands[0], "kill") == 0) {
+    } else if (strcmp(argv, "kill") == 0) {
         return KILL;
-    } else if (strcmp(*cmd->commands[0], "zombify") == 0) {
+    } else if (strcmp(argv, "zombify") == 0) {
         return ZOMBIFY;
-    } else if (strcmp(*cmd->commands[0], "orphanify") == 0) {
+    } else if (strcmp(argv, "orphanify") == 0) {
         return ORPHANIFY;
     } else {
         return UNKNOWN;
     }
 }
 
-bool executeProgram(struct parsed_command *cmd) {
-    ProgramType programType = isKnownProgram(cmd);
-    if (programType == UNKNOWN) {
+bool executeLine(struct parsed_command *cmd) {
+    pid_t *pids = malloc(sizeof(pid_t) * (cmd->num_commands+1));
+    if (handleRedirection(cmd, pids) == false) {
+        free(pids);
         return false;
-    } else {
-        /* Switch case on user programs */
-        switch (programType) {
-            case CAT:
-                s_cat(cmd);
-                break;
-            case SLEEP:
-                s_sleep(cmd);
-                break;
-            case BUSY:
-                s_busy(cmd);
-                break;
-            case ECHO:
-                s_echo(cmd);
-                break;
-            case LS:
-                s_ls(cmd);
-                break;
-            case TOUCH:
-                s_touch(cmd);
-                break;
-            case MV:
-                s_mv(cmd);
-                break;
-            case CP:
-                s_cp(cmd);
-                break;
-            case RM:
-                s_rm(cmd);
-                break;
-            case CHMOD:
-                s_chmod(cmd);
-                break;
-            case PS:
-                s_ps(cmd);
-                break;
-            case KILL:
-                s_kill(cmd);
-                break;
-            case ZOMBIFY:
-                s_zombify(cmd);
-                break;
-            case ORPHANIFY:
-                s_orphanify(cmd);
-                break;
-            default:
-                return false;
+    }
+    
+    if (cmd->is_background == false) { // In non-interactive mode, & will be ignored
+
+        // tcsetpgrp(STDIN_FILENO, pids[0]); // delegate the terminal control
+
+        bool isStopped = false;
+        bool isKilled = false;
+
+        for (int i = 0; i < cmd->num_commands; i++) {
+            int wstatus;
+            do {
+                // if (waitpid(pids[i], &wstatus, WUNTRACED | WCONTINUED) > 0) {
+                if (p_waitpid(pids[i], &wstatus, false) > 0) {
+                    if (WIFSIGNALED(wstatus)) isKilled = true;
+                    if (WIFSTOPPED(wstatus)) isStopped = true;
+                }
+            } while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus) && !WIFSTOPPED(wstatus));
+        }
+
+        // signal(SIGTTOU, SIG_IGN); // ignore the signal from UNIX when the main process come back from the background to get the terminal control
+        // tcsetpgrp(STDIN_FILENO, getpid()); // give back the terminal control to the main process
+
+        if (isStopped) {
+            Job *newBackgroundJob = createJob(cmd, pids, JOB_STOPPED);
+            appendJobList(&_jobList, newBackgroundJob);
+            writeNewline();
+            writeJobState(newBackgroundJob);
+        } else if (isKilled) {
+            writeNewline();
+            free(pids);
+            free(cmd);
+        } else {
+            free(pids);
+            free(cmd);
+        }
+
+    } else { // cmd->is_background == true
+        Job *newBackgroundJob = createJob(cmd, pids, JOB_RUNNING);
+        appendJobList(&_jobList, newBackgroundJob);
+        writeJobState(newBackgroundJob);
+    }
+    return true; 
+}
+
+bool handleRedirection(struct parsed_command *cmd, pid_t *pids) {
+    if (cmd->num_commands > 0) { 
+        /* create n-1 pipes for n commands in the pipeline */
+        int pfds[cmd->num_commands - 1][2]; // pipe file descriptors
+        for (int i = 0; i < cmd->num_commands - 1; i++) {
+            pipe(pfds[i]);
+        }
+
+        int fd_in = STDIN_FILENO;
+        int fd_out = STDOUT_FILENO;
+
+        for (int idx = 0; idx < cmd->num_commands; idx++) {
+            pid_t pid = fork();
+            if (pid == 0) { // child process
+                /* Set stdin/stdout redirection */
+                if (idx == 0) {
+                    if (cmd->stdin_file != NULL) {
+                        // fd_in = open(cmd->stdin_file, O_RDONLY);
+                        fd_in = f_open(cmd->stdin_file, F_READ);
+                        dup2(fd_in, STDIN_FILENO);
+                    }
+                } else {
+                    dup2(pfds[idx -1][0], STDIN_FILENO);
+                }
+                if (idx == cmd->num_commands - 1) {
+                    if (cmd->stdout_file != NULL) {
+                        // int createMode = O_RDWR | O_CREAT;
+                        // if (cmd->is_file_append) {
+                        //     createMode |= O_APPEND;
+                        // } else {
+                        //     createMode |= O_TRUNC;
+                        // }
+                        // fd_out = open(cmd->stdout_file, createMode, 0644);
+                        fd_out = f_open(cmd->stdout_file, F_WRITE);
+                        dup2(fd_out, STDOUT_FILENO);
+                    }
+                } else {
+                    dup2(pfds[idx][1], STDOUT_FILENO);
+                }
+
+                for (int i = 0; i < cmd->num_commands - 1; i++) {
+                    close(pfds[i][0]);
+                    close(pfds[i][1]);
+                }
+
+                if (executeProgram(cmd->commands[idx], fd_in, fd_out) == false) {
+                    return false;
+                }
+                /* if the command is executed successfully , the child process will end here.*/
+                perror(cmd->commands[idx][0]);
+                exit(EXIT_FAILURE);
+            }
+            pids[idx] = pid;
+            // Set all piped processes pgid to the pid of the first process
+            setpgid(pid, pids[0]);
+        }
+        
+        
+        // close all pipe ports
+        for (int i = 0; i < cmd->num_commands - 1; i++) {
+            close(pfds[i][0]);
+            close(pfds[i][1]);
         }
         return true;
     }
     return false;
 }
 
-void s_cat(struct parsed_command *cmd) {
-
-}
-
-void s_sleep(struct parsed_command *cmd) {
-    int count = argc(cmd);
-    if (count == 1) {
-        printf("sleep: missing operand (sleep for how long?)\n");
-    } else if (count > 2) {
-        printf("sleep: too many arguments\n");
-    } else {
-        int sleepTime = atoi(*cmd->commands[1]) * 10;
-        if (sleepTime == 0) {
-            printf("sleep: invalid time interval '%s'\n", *cmd->commands[1]);
-        } else {
-            p_sleep(sleepTime);
-        }
+bool executeProgram(char **argv, int fd_in, int fd_out) {
+    ProgramType programType = isKnownProgram(argv[0]);
+    /* Switch case on user programs */
+    switch (programType) {
+        case CAT:
+            p_spawn(s_cat, argv, fd_in, fd_out);
+            break;
+        case SLEEP:
+            p_spawn(s_sleep, argv, fd_in, fd_out);
+            break;
+        case BUSY:
+            p_spawn(s_busy, argv, fd_in, fd_out);
+            break;
+        case ECHO:
+            p_spawn(s_echo, argv, fd_in, fd_out);
+            break;
+        case LS:
+            p_spawn(s_ls, argv, fd_in, fd_out);
+            break;
+        case TOUCH:
+            p_spawn(s_touch, argv, fd_in, fd_out);
+            break;
+        case MV:
+            p_spawn(s_mv, argv, fd_in, fd_out);
+            break;
+        case CP:
+            p_spawn(s_cp, argv, fd_in, fd_out);
+            break;
+        case RM:
+            p_spawn(s_rm, argv, fd_in, fd_out);
+            break;
+        case CHMOD:
+            p_spawn(s_chmod, argv, fd_in, fd_out);
+            break;
+        case PS:
+            p_spawn(s_ps, argv, fd_in, fd_out);
+            break;
+        case KILL:
+            p_spawn(s_kill, argv, fd_in, fd_out);
+            break;
+        case ZOMBIFY:
+            p_spawn(s_zombify, argv, fd_in, fd_out);
+            break;
+        case ORPHANIFY:
+            p_spawn(s_orphanify, argv, fd_in, fd_out);
+            break;
+        default:
+            return false;
     }
-}
-
-void s_busy(struct parsed_command *cmd) {
-    while (true);
-}
-
-void s_echo(struct parsed_command *cmd) {
-    
-}
-
-void s_ls(struct parsed_command *cmd) {
-    int count = argc(cmd);
-    if (count == 1) {
-        f_ls(".");
-    } else if (count == 2) {
-        f_ls(*cmd->commands[1]);
-    } else {
-        printf("ls: too many arguments\n");
-    }
-}
-
-void s_touch(struct parsed_command *cmd) {
-
-}
-
-void s_mv(struct parsed_command *cmd) {
-
-}
-
-void s_cp(struct parsed_command *cmd) {
-
-}
-
-void s_rm(struct parsed_command *cmd) {
-
-}
-
-void s_chmod(struct parsed_command *cmd) {
-
-}
-
-void s_ps(struct parsed_command *cmd) {
-
-}
-
-void s_kill(struct parsed_command *cmd) {
-    int count = argc(cmd);
-    if (count == 1) {
-        printf("kill: missing operand (kill what?)\n");
-    } else if (count == 2) {
-        if (p_kill(atoi(*cmd->commands[1]), S_SIGTERM) == -1) {
-            printf("kill: invalid process id '%s'\n", *cmd->commands[1]);
-        }
-    } else {
-        int signal = S_SIGTERM;
-        if (strcmp(*cmd->commands[1], "term") == 0) {
-            for (int i = 2; i < count; i++) {
-                if (p_kill(atoi(*cmd->commands[i]), signal) == -1) {
-                    printf("kill: invalid process id '%s'\n", *cmd->commands[i]);
-                }
-            }
-        } else if (strcmp(*cmd->commands[1], "stop") == 0) {
-            signal = S_SIGSTOP;
-            for (int i = 2; i < count; i++) {
-                if (p_kill(atoi(*cmd->commands[i]), signal) == -1) {
-                    printf("kill: invalid process id '%s'\n", *cmd->commands[i]);
-                }
-            }
-        } else if (strcmp(*cmd->commands[1], "cont") == 0) {
-            signal = S_SIGCONT;
-            for (int i = 2; i < count; i++) {
-                if (p_kill(atoi(*cmd->commands[i]), signal) == -1) {
-                    printf("kill: invalid process id '%s'\n", *cmd->commands[i]);
-                }
-            }
-        } else {
-            for (int i = 1; i < count; i++) {
-                if (p_kill(atoi(*cmd->commands[i]), signal) == -1) {
-                    printf("kill: invalid process id '%s'\n", *cmd->commands[i]);
-                }
-            }
-        }
-    }
-}
-
-void s_zombify(struct parsed_command *cmd) {
-    
-}
-
-void s_orphanify(struct parsed_command *cmd) {
-
+    return true;
 }

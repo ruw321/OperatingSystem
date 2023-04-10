@@ -29,7 +29,7 @@ void shell_process() {
             int res = parseLine(line, &cmd);
             if (res == 0) {
                 if (executeBuiltinCommand(cmd) == false) {
-                    if (executeProgram(cmd) == false) {
+                    if (executeLine(cmd) == false) {
                         printf("Error in executeProgram\n");
                     }
                 }  
@@ -84,18 +84,3 @@ int shell_init(int argc, const char **argv) {
 
     return SUCCESS;
 }
-
-// int main(int argc, char const *argv[])
-// {
-
-//     // init system
-//     if (shell_init(argc, argv) == FAILURE) {
-//         perror("failed to init shell");
-//         return FAILURE;
-//     }
-
-//     // swapcontext(&main_context, &scheduler_context);
-//     shell_process();
-
-//     return 0;
-// }

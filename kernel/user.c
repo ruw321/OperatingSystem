@@ -1,6 +1,7 @@
 #include "user.h"
 
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
+    printf("forked a new process\n");
     // forks a new thread that retains most of the attributes of the parent thread 
     pcb* pcb = k_process_create(active_process);
     if (pcb == NULL) {
@@ -120,7 +121,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             active_process->ticks_to_reach = -1;    
 
             // switch context to scheduler 
-            stopped_by_timer = true;
+            stopped_by_timer = false;
             swapcontext(&active_process->ucontext, &scheduler_context);
 
             // at this point, the parent process should be unblocked

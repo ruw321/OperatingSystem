@@ -86,18 +86,20 @@ pcb* next_process() {
                 enqueue(chosen_queue, temp_node);
             }
         }
+        // printf("next process to run is: %i\n", chosen_queue->head->pcb->pid);
         return chosen_queue->head->pcb;
     }
 }
 
 
 void scheduler() {
+    //printf("before active process pid: %i\n", active_process->pid);
     // printf("scheduler is running\n");
     // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
-    if (p_active_context != NULL && !is_priority_queue_empty(ready_queue) && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0) {
+    if (p_active_context != NULL && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0) {
         
-        // printf("active priority: %d\n", active_process->priority);
+        //printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
         dequeue_front_by_priority(ready_queue, active_process->priority);
         pcb_node* currNode = new_pcb_node(active_process);
@@ -117,7 +119,7 @@ void scheduler() {
             if (active_process->ticks_to_reach <= tick_tracker && active_process->state == RUNNING) {
                 // process completed, add it to the exit queue
                 enqueue(exited_queue, currNode);
-                // printf("process is finished (not stopped by the timer)\n");
+                //printf("process is finished (not stopped by the timer)\n");
                 //TODO: if the process exited either normally or by signal
                 if (true) {
                     // exited normally
@@ -129,16 +131,17 @@ void scheduler() {
                 pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
                 if (parent != NULL) {
                     // if the parent is blocked waiting for it, unblock the parent
+                    printf("unblocking the parent: %i\n", parent->pcb->pid);
                     if (parent->pcb->ticks_to_reach == -1) {
                         if (process_unblock(active_process->ppid) == -1) {
-                            // printf("failed to unblock the parent\n");
+                            printf("failed to unblock the parent\n");
                         }
                     }
                     // remove the node from children queue and add it to the zombies queue
                     dequeue_by_pid(parent->pcb->children, active_process->pid);
                     enqueue(parent->pcb->zombies, currNode);
                 } else {
-                    // printf("Parent node is not supposed to be null\n");
+                    printf("Parent node is not supposed to be null\n");
                 }
                 // TODO: orphan clean ups
                 // k_process_cleaup_orphan(active_process);
@@ -149,18 +152,17 @@ void scheduler() {
                     enqueue_by_priority(ready_queue, active_process->priority, currNode);
                 } else {
                     // BLOCKED by p_waitpid, add it to the stopped queue
+                    printf("adding the process to the stopped queue: %i\n", currNode->pcb->pid);
                     enqueue(stopped_queue, currNode);
                 }
                 // TODO: deal with processes stopped by signals
             }
         }
     }
-
-    p_active_context = &scheduler_context;
     active_process = next_process();
     active_process->prev_state = active_process->state;
     active_process->state = RUNNING;
-    // printf("next selected process id: %i\n", active_process->pid);
+    //printf("next selected process id: %i\n", active_process->pid);
     p_active_context = &active_process->ucontext;
     setcontext(p_active_context);
 }

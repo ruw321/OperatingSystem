@@ -202,17 +202,23 @@ int process_unblock(pid_t pid) {
         return -1;
     }
 
-    unblock_node->pcb->state = READY;
-    unblock_node->pcb->prev_state = READY;
-    unblock_node->pcb->ticks_to_reach = 0;
-
     // remove from the stopped queue, and add it back to the ready queue
     if (unblock_node->pcb->state == BLOCKED && unblock_node->pcb->ticks_to_reach < 1) {
+
+        pcb* tempPCB = new_pcb(&unblock_node->pcb->ucontext, unblock_node->pcb->pid);
+
+        printf("removing the node from stopped queue: %i\n", unblock_node->pcb->pid);
         if (dequeue_by_pid(stopped_queue, unblock_node->pcb->pid) == -1) {
             printf("Error with removing the node from the stopped queue\n");
             return -1;
         }
-        enqueue_by_priority(ready_queue, unblock_node->pcb->priority, unblock_node);
+
+        // tempPCB->state = READY;
+        // tempPCB->prev_state = READY;
+        // tempPCB->ticks_to_reach = 0;
+
+        printf("adding the node back to the ready queue: %i\n", tempPCB->pid);
+        enqueue_by_priority(ready_queue, tempPCB->priority, new_pcb_node(tempPCB));
     }
     return 0;
 }

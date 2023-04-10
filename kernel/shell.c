@@ -61,7 +61,7 @@ int shell_init(int argc, const char **argv) {
     main_context.uc_link = NULL;
 
     active_process = new_pcb(&main_context, lastPID++);
-    p_active_context = &main_context;
+    p_active_context = NULL;
 
     // init shell ucontext
     ucontext_t shell_context;
@@ -76,7 +76,7 @@ int shell_init(int argc, const char **argv) {
 
     pcb *shell_pcb = new_pcb(&shell_context, lastPID++);
     shell_pcb->priority = -1;   // the default is 0, but we want -1
-
+    printf("shell pid: %i\n", shell_pcb->pid);
     pcb_node *shell_node = new_pcb_node(shell_pcb);
 
     enqueue_by_priority(ready_queue, HIGH, shell_node);

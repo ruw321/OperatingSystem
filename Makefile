@@ -2,7 +2,7 @@ PROG=pennOS
 CC = clang
 
 # Replace -O3 with -g for a debug version during development
-CFLAGS = -Wall
+CFLAGS = -Wall -g
 
 TOPDIR = $(PWD)
 FS_DIR = $(TOPDIR)/PennFAT

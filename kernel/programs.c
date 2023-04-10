@@ -41,7 +41,6 @@ void s_echo(char *argv[]) {
 
 void s_ls(char *argv[]) {
     int count = argc(argv);
-    printf("count: %d\n", count);
     if (count == 1) {
         f_ls(NULL);
     } else if (count == 2) {

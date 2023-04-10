@@ -123,6 +123,7 @@ int f_read(int fd, int n, char *buf) {
     }
 
     FdNode *fdNode = active_process->fds[fd];
+    /* It is possible that fd = 0 and fdNode is not NULL. Because redirection will replace the fd table of the process. */
     if (fdNode == NULL) {
         if (fd == F_STDIN_FD) {
             int res = read(fd, buf, n);
@@ -169,6 +170,7 @@ int f_write(int fd, const char *str, int n) {
         return F_FAILURE;
     }
 
+    /* It is possible that fd = 0 and fdNode is not NULL. Because redirection will replace the fd table of the process. */
     FdNode *fdNode = active_process->fds[fd];
     if (fdNode == NULL) {
         if (fd == F_STDIN_FD) {

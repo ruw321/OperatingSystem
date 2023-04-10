@@ -26,10 +26,14 @@ void shell_process() {
         }
         else {
             struct parsed_command *cmd;
-            parseLine(line, &cmd);
-            int wstatus;
-            pid_t pid = p_spawn(s_ls, cmd->commands[0], 0, 1);
-            p_waitpid(pid, &wstatus, false);
+            int res = parseLine(line, &cmd);
+            if (res == 0) {
+                if (executeBuiltinCommand(cmd) == false) {
+                    if (executeLine(cmd) == false) {
+                        printf("Error in executeProgram\n");
+                    }
+                }  
+            }
         }
         free(line);
 
@@ -47,6 +51,7 @@ int shell_init(int argc, const char **argv) {
     }
 
     // fs_mount(argv[1]);
+    fs_mount("test");
     initJobList(&_jobList);
 
     // initialize main context

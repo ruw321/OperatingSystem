@@ -47,7 +47,6 @@ int parseLine(char *line, struct parsed_command **cmd);
 /* Execute a user program */
 ProgramType isKnownProgram(char *argv);
 bool executeLine(struct parsed_command *cmd);
-bool handleRedirection(struct parsed_command *cmd, pid_t *pids);
-bool executeProgram(char **argv, int fd_in, int fd_out);
+pid_t executeProgram(char **argv, int fd_in, int fd_out);
 
 #endif

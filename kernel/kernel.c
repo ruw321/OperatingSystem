@@ -194,6 +194,7 @@ int unblock_process(pid_t pid) {
 }
 
 int process_unblock(pid_t pid) {
+    printf("Unblocking process %d\n", pid);
     // find the corresponding pcb
     pcb_node* unblock_node = get_node_by_pid(stopped_queue, pid);
     if (unblock_node == NULL) {

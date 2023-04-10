@@ -5,7 +5,7 @@ int argc(char *argv[]) {
     while (argv[count] != NULL) {
         count++;
     }
-    return count-1;
+    return count;
 }
 
 /* Shell Built-in Programs*/
@@ -40,15 +40,15 @@ void s_echo(char *argv[]) {
 }
 
 void s_ls(char *argv[]) {
-    printf("Yes, s_ls is executed!\n");
-    // int count = argc(argv);
-    // if (count == 1) {
-    //     f_ls(".");
-    // } else if (count == 2) {
-    //     f_ls(argv[1]);
-    // } else {
-    //     printf("ls: too many arguments\n");
-    // }
+    int count = argc(argv);
+    printf("count: %d\n", count);
+    if (count == 1) {
+        f_ls(NULL);
+    } else if (count == 2) {
+        f_ls(argv[1]);
+    } else {
+        printf("ls: too many arguments\n");
+    }
 }
 
 void s_touch(char *argv[]) {

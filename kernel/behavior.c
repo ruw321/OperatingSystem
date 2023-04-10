@@ -112,171 +112,110 @@ ProgramType isKnownProgram(char *argv) {
 }
 
 bool executeLine(struct parsed_command *cmd) {
-    pid_t *pids = malloc(sizeof(pid_t) * (cmd->num_commands+1));
-    if (handleRedirection(cmd, pids) == false) {
-        free(pids);
-        return false;
-    }
+
+    int fd[2];
+    fd[0] = STDIN_FILENO;
+    fd[1] = STDOUT_FILENO;
     
+    // TODO: handle the redirection
+
+    pid_t pid = executeProgram(*cmd->commands, fd[0], fd[1]);
+    if (pid == -1) {
+        perror("Failed to execute the program.");
+        exit(EXIT_FAILURE);
+    }
+
     if (cmd->is_background == false) { // In non-interactive mode, & will be ignored
 
         // tcsetpgrp(STDIN_FILENO, pids[0]); // delegate the terminal control
 
-        bool isStopped = false;
-        bool isKilled = false;
+        // bool isStopped = false;
+        // bool isKilled = false;
 
-        for (int i = 0; i < cmd->num_commands; i++) {
-            int wstatus;
-            do {
-                // if (waitpid(pids[i], &wstatus, WUNTRACED | WCONTINUED) > 0) {
-                if (p_waitpid(pids[i], &wstatus, false) > 0) {
-                    if (WIFSIGNALED(wstatus)) isKilled = true;
-                    if (WIFSTOPPED(wstatus)) isStopped = true;
-                }
-            } while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus) && !WIFSTOPPED(wstatus));
-        }
-
+        int wstatus;
+        // do {
+        //     // if (waitpid(pids[i], &wstatus, WUNTRACED | WCONTINUED) > 0) {
+        //     if (p_waitpid(pid, &wstatus, false) > 0) {
+        //         // if (WIFSIGNALED(wstatus)) isKilled = true;
+        //         // if (WIFSTOPPED(wstatus)) isStopped = true;
+        //     }
+        // } while (wstatus != TERMINATED && wstatus != STOPPED);
+        // } while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus) && !WIFSTOPPED(wstatus));
+        p_waitpid(pid, &wstatus, false);
         // signal(SIGTTOU, SIG_IGN); // ignore the signal from UNIX when the main process come back from the background to get the terminal control
         // tcsetpgrp(STDIN_FILENO, getpid()); // give back the terminal control to the main process
 
-        if (isStopped) {
-            Job *newBackgroundJob = createJob(cmd, pids, JOB_STOPPED);
-            appendJobList(&_jobList, newBackgroundJob);
-            writeNewline();
-            writeJobState(newBackgroundJob);
-        } else if (isKilled) {
-            writeNewline();
-            free(pids);
-            free(cmd);
-        } else {
-            free(pids);
-            free(cmd);
-        }
+        // if (isStopped) {
+        //     Job *newBackgroundJob = createJob(cmd, pids, JOB_STOPPED);
+        //     appendJobList(&_jobList, newBackgroundJob);
+        //     writeNewline();
+        //     writeJobState(newBackgroundJob);
+        // } else if (isKilled) {
+        //     writeNewline();
+        //     free(pids);
+        //     free(cmd);
+        // } else {
+        //     free(pids);
+        //     free(cmd);
+        // }
 
     } else { // cmd->is_background == true
-        Job *newBackgroundJob = createJob(cmd, pids, JOB_RUNNING);
-        appendJobList(&_jobList, newBackgroundJob);
-        writeJobState(newBackgroundJob);
+        // Job *newBackgroundJob = createJob(cmd, pids, JOB_RUNNING);
+        // appendJobList(&_jobList, newBackgroundJob);
+        // writeJobState(newBackgroundJob);
     }
     return true; 
 }
 
-bool handleRedirection(struct parsed_command *cmd, pid_t *pids) {
-    if (cmd->num_commands > 0) { 
-        /* create n-1 pipes for n commands in the pipeline */
-        int pfds[cmd->num_commands - 1][2]; // pipe file descriptors
-        for (int i = 0; i < cmd->num_commands - 1; i++) {
-            pipe(pfds[i]);
-        }
-
-        int fd_in = STDIN_FILENO;
-        int fd_out = STDOUT_FILENO;
-
-        for (int idx = 0; idx < cmd->num_commands; idx++) {
-            pid_t pid = fork();
-            if (pid == 0) { // child process
-                /* Set stdin/stdout redirection */
-                if (idx == 0) {
-                    if (cmd->stdin_file != NULL) {
-                        // fd_in = open(cmd->stdin_file, O_RDONLY);
-                        fd_in = f_open(cmd->stdin_file, F_READ);
-                        dup2(fd_in, STDIN_FILENO);
-                    }
-                } else {
-                    dup2(pfds[idx -1][0], STDIN_FILENO);
-                }
-                if (idx == cmd->num_commands - 1) {
-                    if (cmd->stdout_file != NULL) {
-                        // int createMode = O_RDWR | O_CREAT;
-                        // if (cmd->is_file_append) {
-                        //     createMode |= O_APPEND;
-                        // } else {
-                        //     createMode |= O_TRUNC;
-                        // }
-                        // fd_out = open(cmd->stdout_file, createMode, 0644);
-                        fd_out = f_open(cmd->stdout_file, F_WRITE);
-                        dup2(fd_out, STDOUT_FILENO);
-                    }
-                } else {
-                    dup2(pfds[idx][1], STDOUT_FILENO);
-                }
-
-                for (int i = 0; i < cmd->num_commands - 1; i++) {
-                    close(pfds[i][0]);
-                    close(pfds[i][1]);
-                }
-
-                if (executeProgram(cmd->commands[idx], fd_in, fd_out) == false) {
-                    return false;
-                }
-                /* if the command is executed successfully , the child process will end here.*/
-                perror(cmd->commands[idx][0]);
-                exit(EXIT_FAILURE);
-            }
-            pids[idx] = pid;
-            // Set all piped processes pgid to the pid of the first process
-            setpgid(pid, pids[0]);
-        }
-        
-        
-        // close all pipe ports
-        for (int i = 0; i < cmd->num_commands - 1; i++) {
-            close(pfds[i][0]);
-            close(pfds[i][1]);
-        }
-        return true;
-    }
-    return false;
-}
-
-bool executeProgram(char **argv, int fd_in, int fd_out) {
+pid_t executeProgram(char **argv, int fd_in, int fd_out) {
     ProgramType programType = isKnownProgram(argv[0]);
+    pid_t pid = -1;
     /* Switch case on user programs */
     switch (programType) {
         case CAT:
-            p_spawn(s_cat, argv, fd_in, fd_out);
+            pid = p_spawn(s_cat, argv, fd_in, fd_out);
             break;
         case SLEEP:
-            p_spawn(s_sleep, argv, fd_in, fd_out);
+            pid = p_spawn(s_sleep, argv, fd_in, fd_out);
             break;
         case BUSY:
-            p_spawn(s_busy, argv, fd_in, fd_out);
+            pid = p_spawn(s_busy, argv, fd_in, fd_out);
             break;
         case ECHO:
-            p_spawn(s_echo, argv, fd_in, fd_out);
+            pid = p_spawn(s_echo, argv, fd_in, fd_out);
             break;
         case LS:
-            p_spawn(s_ls, argv, fd_in, fd_out);
+            pid = p_spawn(s_ls, argv, fd_in, fd_out);
             break;
         case TOUCH:
-            p_spawn(s_touch, argv, fd_in, fd_out);
+            pid = p_spawn(s_touch, argv, fd_in, fd_out);
             break;
         case MV:
-            p_spawn(s_mv, argv, fd_in, fd_out);
+            pid = p_spawn(s_mv, argv, fd_in, fd_out);
             break;
         case CP:
-            p_spawn(s_cp, argv, fd_in, fd_out);
+            pid = p_spawn(s_cp, argv, fd_in, fd_out);
             break;
         case RM:
-            p_spawn(s_rm, argv, fd_in, fd_out);
+            pid = p_spawn(s_rm, argv, fd_in, fd_out);
             break;
         case CHMOD:
-            p_spawn(s_chmod, argv, fd_in, fd_out);
+            pid = p_spawn(s_chmod, argv, fd_in, fd_out);
             break;
         case PS:
-            p_spawn(s_ps, argv, fd_in, fd_out);
+            pid = p_spawn(s_ps, argv, fd_in, fd_out);
             break;
         case KILL:
-            p_spawn(s_kill, argv, fd_in, fd_out);
+            pid = p_spawn(s_kill, argv, fd_in, fd_out);
             break;
         case ZOMBIFY:
-            p_spawn(s_zombify, argv, fd_in, fd_out);
+            pid = p_spawn(s_zombify, argv, fd_in, fd_out);
             break;
         case ORPHANIFY:
-            p_spawn(s_orphanify, argv, fd_in, fd_out);
+            pid = p_spawn(s_orphanify, argv, fd_in, fd_out);
             break;
         default:
-            return false;
+            return pid;
     }
-    return true;
+    return pid;
 }

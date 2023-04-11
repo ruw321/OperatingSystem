@@ -123,7 +123,7 @@ void scheduler() {
                 //TODO: if the process exited either normally or by signal
                 if (true) {
                     // exited normally
-                    active_process->state = TERMINATED;
+                    active_process->state = EXITED;
                 } else {
                     // stopped by signal
                     active_process->state = TERMINATED;

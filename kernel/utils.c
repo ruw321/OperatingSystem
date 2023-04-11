@@ -47,6 +47,9 @@ priority_queue* new_priority_queue() {
 
 
 bool is_empty(pcb_queue* queue) {
+    if (queue == NULL) {
+        printf("fuck\n");
+    }
     return (queue->head == NULL);
 }
 

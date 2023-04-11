@@ -25,23 +25,24 @@ void alarm_handler(int signum)
     // check all processes in the block queue, if sleep has finished
     pcb_node* n = stopped_queue->head;
     while (n != NULL) {
+        pcb_node* tmp = n;
+        n = n->next;
         // sleep finished
-        if (n->pcb->is_sleep && n->pcb->ticks_to_reach > 0 && n->pcb->ticks_to_reach <= tick_tracker && n->pcb->state == BLOCKED) {
+        if (tmp->pcb->is_sleep && tmp->pcb->ticks_to_reach > 0 && tmp->pcb->ticks_to_reach <= tick_tracker && tmp->pcb->state == BLOCKED) {
             printf("here\n");
-            n->pcb->prev_state = READY;
-            n->pcb->prev_state = READY;
-            n->pcb->ticks_to_reach = 0;
+            tmp->pcb->prev_state = READY;
+            tmp->pcb->prev_state = READY;
+            tmp->pcb->ticks_to_reach = 0;
 
-            process_unblock(n->pcb->ppid);
+
+            process_unblock(tmp->pcb->ppid);
 
             // add to ready queue
-            pcb_node* p_node = new_pcb_node(n->pcb);
-            enqueue_by_priority(ready_queue, n->pcb->priority, p_node);
-
+            pcb_node* p_node = new_pcb_node(tmp->pcb);
+            enqueue_by_priority(ready_queue, tmp->pcb->priority, p_node);
             // remove from stopped queue
-            dequeue_by_pid(stopped_queue, n->pcb->pid);
+            dequeue_by_pid(stopped_queue, tmp->pcb->pid);
         }
-        n = n->next;
     }
 
     swapcontext(p_active_context, &scheduler_context);
@@ -118,7 +119,7 @@ void scheduler() {
     // printf("scheduler is running\n");
     // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
-    if (p_active_context != NULL && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0 && !is_priority_queue_empty(ready_queue)) {
+    if (p_active_context != NULL && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0 && !is_priority_queue_empty(ready_queue) && active_process != idle_process) {
         
         //printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
@@ -140,7 +141,7 @@ void scheduler() {
             if (active_process->ticks_to_reach <= tick_tracker && active_process->state == RUNNING) {
                 // process completed, add it to the exit queue
                 enqueue(exited_queue, currNode);
-                //printf("process is finished (not stopped by the timer)\n");
+                printf("process is finished (not stopped by the timer)\n");
                 //TODO: if the process exited either normally or by signal
                 if (true) {
                     // exited normally
@@ -152,15 +153,19 @@ void scheduler() {
                 pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
                 if (parent != NULL) {
                     // if the parent is blocked waiting for it, unblock the parent
-                    printf("unblocking the parent: %i\n", parent->pcb->pid);
+                    printf("1 unblocking the parent: %i\n", parent->pcb->pid);
                     if (parent->pcb->ticks_to_reach == -1) {
                         if (process_unblock(active_process->ppid) == -1) {
                             printf("failed to unblock the parent\n");
                         }
                     }
                     // remove the node from children queue and add it to the zombies queue
+                    printf("11111\n");
+                    printf("active: %d\n", active_process->pid);
                     dequeue_by_pid(parent->pcb->children, active_process->pid);
+                    printf("22222\n");
                     enqueue(parent->pcb->zombies, currNode);
+                    printf("33333\n");
                 } else {
                     printf("Parent node is not supposed to be null\n");
                 }
@@ -183,9 +188,14 @@ void scheduler() {
     active_process = next_process();
     active_process->prev_state = active_process->state;
     active_process->state = RUNNING;
-    //printf("next selected process id: %i\n", active_process->pid);
-    p_active_context = &active_process->ucontext;
-    setcontext(p_active_context);
+    // printf("next selected process id: %i\n", active_process->pid);
+    if (active_process == idle_process) {
+        setcontext(&scheduler_context);
+    } else {
+        p_active_context = &active_process->ucontext;
+        setcontext(p_active_context);
+    }
+    
 }
 
 

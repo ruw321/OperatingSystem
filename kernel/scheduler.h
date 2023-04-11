@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "global.h"
 #include "kernel.h"
+#include "log.h"
 
 extern pcb* active_process;
 extern priority_queue* ready_queue;

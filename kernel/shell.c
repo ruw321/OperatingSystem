@@ -50,6 +50,9 @@ int shell_init(int argc, const char **argv) {
         return FAILURE;
     }
 
+    // initialize log file
+    log_init();
+
     // fs_mount(argv[1]);
     fs_mount("test");
     initJobList(&_jobList);
@@ -76,7 +79,9 @@ int shell_init(int argc, const char **argv) {
 
     pcb *shell_pcb = new_pcb(&shell_context, lastPID++);
     shell_pcb->priority = -1;   // the default is 0, but we want -1
-    printf("shell pid: %i\n", shell_pcb->pid);
+    shell_pcb->pname = malloc(sizeof(char)*(strlen("shell"))+1);
+    strcpy(shell_pcb->pname, "shell");
+    
     pcb_node *shell_node = new_pcb_node(shell_pcb);
 
     enqueue_by_priority(ready_queue, HIGH, shell_node);

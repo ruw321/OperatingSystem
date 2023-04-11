@@ -7,6 +7,7 @@
 #include "behavior.h"
 #include "../PennFAT/filesys.h"
 #include "../PennFAT/interface.h"
+#include "log.h"
 
 void shell_process();
 

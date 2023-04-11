@@ -253,5 +253,10 @@ void p_sleep(unsigned int ticks) {
     active_process->prev_state = BLOCKED;
     active_process->state = BLOCKED;
     active_process->ticks_to_reach = tick_tracker + ticks;
+    active_process->is_sleep = true;
+    printf("ticks to reach is %d\n", active_process->ticks_to_reach);
+    if (block_process(active_process->pid) == FAILURE) {
+        perror("Fail to block for sleep\n");
+    }
     swapcontext(&active_process->ucontext, &scheduler_context);
 }

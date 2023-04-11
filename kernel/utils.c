@@ -16,6 +16,8 @@ pcb* new_pcb(ucontext_t* ucontext, pid_t pid) {
         pcb_n->fds[i] = NULL;
     }
 
+    pcb_n->is_sleep = false;
+
     return pcb_n;
 }
 
@@ -115,6 +117,7 @@ int dequeue_by_pid(pcb_queue* queue, pid_t pid) {
 
 int dequeue_front(pcb_queue* queue) {
     if (is_empty(queue)) {
+        printf("empty\n");
         return -1;
     }
 

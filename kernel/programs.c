@@ -69,6 +69,7 @@ void s_sleep(char *argv[]) {
             printf("sleep: invalid time interval '%s'\n", argv[1]);
         } else {
             p_sleep(sleepTime);
+            printf("sleep finished\n");
         }
     }
 }

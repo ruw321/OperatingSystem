@@ -64,12 +64,17 @@ int k_process_kill(pcb *process, int signal) {
         }
 
     } else if (signal == SIGCONT) {
-        // TODO: special case for sleep
         // TODO: what should the prev_state be?
         if (process->state == STOPPED) {
-            process->state = READY;
-            pcb_node* new_node = new_pcb_node(process);
-            enqueue_by_priority(ready_queue, process->priority, new_node);
+            if (process->is_sleep) {
+                process->prev_state = BLOCKED;
+                process->state = BLOCKED;
+            } else {
+                process->state = READY;
+                pcb_node* new_node = new_pcb_node(process);
+                enqueue_by_priority(ready_queue, process->priority, new_node);
+            }
+            
         }
     } else if (signal == SIGTERM) {
         process->prev_state = process->state;
@@ -162,6 +167,7 @@ int block_process(pid_t pid) {
     // added to stopped queue
     pcb_node* p_node = new_pcb_node(cur_pcb);
     enqueue(stopped_queue, p_node);
+    printf("block_process() add %d to stopped queue\n", p_node->pcb->pid);
 
     return SUCCESS;
 }

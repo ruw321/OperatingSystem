@@ -19,10 +19,31 @@ int set_alarm_handler() {
 
 void alarm_handler(int signum)
 {
-    // TODO: add logic for sleep command
-    // printf("triggered the alarm\n");
     stopped_by_timer = true;
     tick_tracker++;
+
+    // check all processes in the block queue, if sleep has finished
+    pcb_node* n = stopped_queue->head;
+    while (n != NULL) {
+        // sleep finished
+        if (n->pcb->is_sleep && n->pcb->ticks_to_reach > 0 && n->pcb->ticks_to_reach <= tick_tracker && n->pcb->state == BLOCKED) {
+            printf("here\n");
+            n->pcb->prev_state = READY;
+            n->pcb->prev_state = READY;
+            n->pcb->ticks_to_reach = 0;
+
+            process_unblock(n->pcb->ppid);
+
+            // add to ready queue
+            pcb_node* p_node = new_pcb_node(n->pcb);
+            enqueue_by_priority(ready_queue, n->pcb->priority, p_node);
+
+            // remove from stopped queue
+            dequeue_by_pid(stopped_queue, n->pcb->pid);
+        }
+        n = n->next;
+    }
+
     swapcontext(p_active_context, &scheduler_context);
 }
 
@@ -93,11 +114,11 @@ pcb* next_process() {
 
 
 void scheduler() {
-    //printf("before active process pid: %i\n", active_process->pid);
+    // printf("before active process pid: %i\n", active_process->pid);
     // printf("scheduler is running\n");
     // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
-    if (p_active_context != NULL && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0) {
+    if (p_active_context != NULL && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0 && !is_priority_queue_empty(ready_queue)) {
         
         //printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
@@ -206,6 +227,7 @@ int scheduler_init() {
 
 // suspend the idle process until a signal is delivered to it
 void idle_func() {
+    printf("In idle_func\n");
     sigset_t mask;
     // initializes the signal mask to be an empty set
     if (sigemptyset(&mask) == -1) {

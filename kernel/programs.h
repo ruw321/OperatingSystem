@@ -21,8 +21,10 @@ void s_ps(char *argv[]);
 void s_kill(char *argv[]);
 void s_zombify(char *argv[]);
 void s_orphanify(char *argv[]);
+void s_hang(char *argv[]);
+void s_nohang(char *argv[]);
+void s_recur(char *argv[]);
 
-
-void s_test_bg(char *argv[]);
+void s_test(char *argv[]);
 
 #endif

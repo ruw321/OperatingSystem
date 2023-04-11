@@ -329,3 +329,13 @@ int fs_writeFAT(int startBlock, int startBlockOffset, int size, const char *buff
 
     return writeFAT(fs_FATConfig, fs_FAT16InMemory, startBlock, startBlockOffset, size, buffer);
 }
+
+int fs_chmod(char *fileName, uint8_t perm) {
+    int directoryEntryOffset = findFileDirectory(fs_FATConfig, fs_FAT16InMemory, fileName);
+    DirectoryEntry dir;
+    readDirectoryEntry(fs_FATConfig, directoryEntryOffset, &dir);  
+    dir.perm = perm;
+    dir.mtime = time(NULL);
+    writeFileDirectory(fs_FATConfig, directoryEntryOffset, &dir);
+    return 0;
+}

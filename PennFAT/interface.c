@@ -85,6 +85,7 @@ int f_open(const char *fname, int mode) {
 }
 
 int f_close(int fd) {
+    
     if (isFileSystemMounted() == false) {
         printf("Error: No mounted file system.\n");
         return F_FAILURE;
@@ -105,6 +106,7 @@ int f_close(int fd) {
         deleteFileDirectory(fs_FATConfig, fs_FAT16InMemory, directoryEntryOffset);
     }
 
+    removeFdNode(active_process->fds[fd]);
     active_process->fds[fd] = NULL;
     return F_SUCCESS;
 }
@@ -394,8 +396,23 @@ int f_ls(const char *filename) {
 }
 
 bool f_find(const char *filename) {
-    if (findFileDirectory(fs_FATConfig, fs_FAT16InMemory, filename) == FS_NOT_FOUND) {
+    int res = findFileDirectory(fs_FATConfig, fs_FAT16InMemory, filename);
+    if (res == FS_NOT_FOUND) {
         return false;
     }
     return true;
+}
+
+bool f_isExecutable(const char *filename) {
+    int res = findFileDirectory(fs_FATConfig, fs_FAT16InMemory, filename);
+    if (res == FS_NOT_FOUND) {
+        return false;
+    }
+    DirectoryEntry dir;
+    readDirectoryEntry(fs_FATConfig, res, &dir);
+    if (dir.perm != FILE_PERM_READ_EXEC && dir.perm != FILE_PERM_READ_WRITE_EXEC) {
+        return false;
+    } else {
+        return true;
+    }
 }

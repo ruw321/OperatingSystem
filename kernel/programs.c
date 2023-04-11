@@ -8,8 +8,6 @@ int argc(char *argv[]) {
     return count;
 }
 
-/* Shell Built-in Programs*/
-
 void s_cat(char *argv[]) {
     int count = argc(argv);
     char buffer[READ_BUFFER_SIZE];
@@ -80,11 +78,11 @@ void s_busy(char *argv[]) {
 void s_echo(char *argv[]) {
     int count = argc(argv);
     for (int i = 1; i < count; i++) {
-        if (f_write(F_STDOUT_FD, argv[i], strlen(argv[i]) + 1) == FAILURE) {
+        if (f_write(F_STDOUT_FD, argv[i], strlen(argv[i])) == FAILURE) {
             printf("echo: error writing to stdout\n");
             return;
         }
-        if (i == count - 1) {
+        if (i != count - 1) {
             if (f_write(F_STDOUT_FD, " ", 1) == FAILURE) {
                 printf("echo: error writing to stdout\n");
                 return;
@@ -172,16 +170,22 @@ void s_rm(char *argv[]) {
 }
 
 void s_chmod(char *argv[]) {
-    // int count = argc(argv);
-    // if (count == 1) {
-    //     printf("chmod: missing operand (chmod what?)\n");
-    // } else if (count == 2) {
-    //     if (pf_chmod(argv[1], atoi(argv[2])) == -1) {
-    //         printf("chmod: %s: No such file or directory\n", argv[1]);
-    //     }
-    // } else if (count > 3) {
-    //     printf("chmod: too many arguments\n");
-    // }
+    int count = argc(argv);
+    if (count != 3) {
+        printf("Error\n");
+    } else {
+        char *permOperation = argv[1];
+        char *fileName = argv[2];
+        if (f_find(fileName)) {
+            if (strcmp(permOperation, "+x") == 0) {
+                fs_chmod(fileName, 7);
+            } else {
+                /* TODO */
+            }
+        } else {
+            printf("Error: No such file %s\n", argv[2]);
+        }
+    }
 }
 
 void s_ps(char *argv[]) {
@@ -261,11 +265,25 @@ void s_orphanify(char *argv[]) {
     return;
 }
 
-void s_test_bg(char *argv[]) {
-    printf("start sleep\n");
+void s_hang(char *argv[]) {
+
+}
+
+void s_nohang(char *argv[]) {
+
+}
+
+void s_recur(char *argv[]) {
+
+}
+
+void s_test(char *argv[]) {
+    printf("start test\n");
     long long i = 0;
-    while (i < 2000000000) {
+    while (i < 20000000000) {
         i++;
     }
-    printf("end sleep\n");
+    
+    printf("end test\n");
+
 }

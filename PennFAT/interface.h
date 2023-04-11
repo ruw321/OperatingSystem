@@ -34,4 +34,6 @@ int f_ls(const char *filename);
 
 bool f_find(const char *filename);
 
+bool f_isExecutable(const char *filename);
+
 #endif

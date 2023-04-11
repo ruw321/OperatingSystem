@@ -1,7 +1,7 @@
 #ifndef BEHAVIOR_H
 #define BEHAVIOR_H
 
-#define S_MAX_LINE_LENGTH 4096
+#define S_MAX_BUFFER_SIZE 4096
 #define PROMPT "pennOS> "
 
 #include "job.h"
@@ -29,7 +29,10 @@ typedef enum {
     KILL,
     ZOMBIFY,
     ORPHANIFY,
-    TEST_BG,
+    HANG,
+    NOHANG,
+    RECUR,
+    TEST,
     UNKNOWN
 } ProgramType;
 
@@ -46,8 +49,8 @@ int parseLine(char *line, struct parsed_command **cmd);
 
 
 /* Execute a user program */
-ProgramType isKnownProgram(char *argv);
-bool executeLine(struct parsed_command *cmd);
-pid_t executeProgram(char **argv, int fd_in, int fd_out);
+ProgramType parseProgramType(struct parsed_command *cmd);
+int executeLine(struct parsed_command *cmd);
+pid_t executeProgram(ProgramType programType, char **argv, int fd_in, int fd_out);
 
 #endif

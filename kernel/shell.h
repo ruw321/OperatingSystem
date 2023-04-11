@@ -12,4 +12,9 @@ void shell_process();
 
 int shell_init(int argc, const char **argv);
 
+bool isBuildinCommand(struct parsed_command *cmd);
+
+bool isKnownProgram(struct parsed_command *cmd);
+
+
 #endif

@@ -28,16 +28,107 @@ void shell_process() {
             struct parsed_command *cmd;
             int res = parseLine(line, &cmd);
             if (res == 0) {
-                if (executeBuiltinCommand(cmd) == false) {
-                    if (executeLine(cmd) == false) {
-                        printf("Error in executeProgram\n");
+                
+                if (isBuildinCommand(cmd)) {
+                    executeBuiltinCommand(cmd);
+                    free(cmd);
+                } else {
+                    if (isKnownProgram(cmd)) {
+                        executeLine(cmd);
+                    } else {
+                        if (cmd->num_commands != 1) {
+                            printf("Error: Unexcepted Input\n");
+                            continue;
+                        } 
+                        if (f_isExecutable(cmd->commands[0][0]) == false){
+                            printf("Error: Cannot execute %s\n", cmd->commands[0][0]);
+                            continue;
+                        }
+
+                        int fd = f_open(cmd->commands[0][0], F_READ);
+                        char scriptBuffer[S_MAX_BUFFER_SIZE];
+                        memset(scriptBuffer, 0, S_MAX_BUFFER_SIZE);
+                        f_read(fd, S_MAX_BUFFER_SIZE, scriptBuffer);
+                        f_close(fd);
+
+                        char* token;
+                        token = strtok(scriptBuffer, "\n");
+                        while (token != NULL) {
+                            res = parseLine(token, &cmd);
+                            if (res == 0) {
+                                executeLine(cmd);
+                            }
+                            token = strtok(NULL, "\n");
+                        }
                     }
                 }
             }
         }
         free(line);
-
     } 
+}
+
+
+bool isBuildinCommand(struct parsed_command *cmd) {
+    if (strcmp(*cmd->commands[0], "bg") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "fg") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "jobs") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "nice") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "nice_pid") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "man") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "logout") == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool isKnownProgram(struct parsed_command *cmd) {
+    if (strcmp(*cmd->commands[0], "cat") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "sleep") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "busy") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "echo") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "ls") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "touch") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "mv") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "cp") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "rm") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "chmod") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "ps") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "kill") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "zombify") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "orphanify") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "hang") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "nohang") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "recur") == 0) {
+        return true;
+    } else if (strcmp(*cmd->commands[0], "test") == 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 int shell_init(int argc, const char **argv) {

@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "parser.h"
 #include "unistd.h"
+#include "../PennFAT/interface.h"
 
 typedef enum {
     JOB_RUNNING,
@@ -27,19 +28,15 @@ typedef enum {
 
 typedef struct Job {
     struct parsed_command *cmd;
-    pid_t *pids; // job process's pgid is set to be its pid
-    pid_t pgpid;
+    pid_t pid;
     JobState state;
-    int pActiveNum; // number of active processes
-    // TODO: add more fields
 } Job;
 
-/* We use linked list as the working around data structure to store jobs */
 typedef struct JobListNode {
     Job *job;
-    int jobId;
     struct JobListNode *prev;
     struct JobListNode *next;
+    int jobId;
 } JobListNode;
 
 typedef struct JobList {
@@ -56,32 +53,36 @@ void writeJobStatePrompt(JobState state);
 void writeJobState(Job *job);
 void writeNewline();
 
-/* Reap zombie processes synchronously */
-void pollBackgroundProcesses();
-
 /* Utility functions for job and job list */
-Job *createJob(struct parsed_command *cmd, pid_t* pids, JobState state);
+Job *createJob(struct parsed_command *cmd, pid_t pid, JobState state);
 void initJobList(JobList *jobList);
 void appendJobList(JobList *jobList, Job *job);
-Job *findJobList(JobList *jobList, pid_t pgpid);
-Job *findJobByPid(JobList *jobList, pid_t pid);
-Job *updateJobList(JobList *jobList, pid_t pgpid, JobState state);
-int removeJobList(JobList *jobList, pid_t pgpid);
-int removeJobListWithoutFree(JobList *jobList, pid_t pgpid);
-int removeJobListWithoutFreeCmdAndPids(JobList *jobList, pid_t pgpid);
-void clearJobList(JobList *jobList);
+Job *findJobList(JobList *jobList, pid_t pid);
+Job *updateJobList(JobList *jobList, pid_t pid, JobState state);
+int removeJobList(JobList *jobList, pid_t pid);
+
 Job *findJobListByJobId(JobList *jobList, int jobId);
 Job *updateJobListByJobId(JobList *jobList, int jobId, JobState state);
 int removeJobListByJobId(JobList *jobList, int jobId);
+int removeJobListWithoutFreeCmd(JobList *jobList, pid_t pid);
+Job *popJobList(JobList *jobList, pid_t pid);
+
 void printJobList(JobList *jobList);
 
 /* Built-in commands */
-CommandType isBuiltinCommand(struct parsed_command *cmd);
-bool executeBuiltinCommand(struct parsed_command *cmd);
+CommandType parseBuiltinCommandType(struct parsed_command *cmd);
+int executeBuiltinCommand(struct parsed_command *cmd);
+
+
+void clearJobList(JobList *jobList);
+void pollBackgroundProcesses();
+
 Job *findTheCurrentJob(JobList *jobList);
 void bgBuildinCommand(struct parsed_command *cmd);
 void fgBuildinCommand(struct parsed_command *cmd);
 void jobsBuiltinCommand();
+
+
 void niceBuildinCommand(struct parsed_command *cmd);
 void nicePidBuildinCommand(struct parsed_command *cmd);
 void manBuildinCommand();

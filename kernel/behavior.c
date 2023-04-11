@@ -5,8 +5,8 @@ void writePrompt() {
 }
 
 void readUserInput(char **line) {
-    char inputBuffer[S_MAX_LINE_LENGTH];
-    int numBytes = f_read(F_STDIN_FD, S_MAX_LINE_LENGTH, inputBuffer);
+    char inputBuffer[S_MAX_BUFFER_SIZE];
+    int numBytes = f_read(F_STDIN_FD, S_MAX_BUFFER_SIZE, inputBuffer);
    
     if (numBytes == 0) { // read nothing but EOF (Ctrl + D at the beginning of the input line)
         *line = NULL;
@@ -47,7 +47,7 @@ LineType parseUserInput(char *line) {
         return lineType;
     }
 
-    if (line[0] == '\0') {
+    if ((line[0] == '\0') || (line[0] == '\n') ) {
         lineType = S_EMPTY_LINE;
     } 
 
@@ -70,52 +70,52 @@ int parseLine(char *line, struct parsed_command **cmd) {
     return res;
 }
 
-ProgramType isKnownProgram(char *argv) {
-    if (strcmp(argv, "cat") == 0) {
+ProgramType parseProgramType(struct parsed_command *cmd) {
+    if (strcmp(*cmd->commands[0], "cat") == 0) {
         return CAT;
-    } else if (strcmp(argv, "sleep") == 0) {
+    } else if (strcmp(*cmd->commands[0], "sleep") == 0) {
         return SLEEP;
-    } else if (strcmp(argv, "busy") == 0) {
+    } else if (strcmp(*cmd->commands[0], "busy") == 0) {
         return BUSY;
-    } else if (strcmp(argv, "echo") == 0) {
+    } else if (strcmp(*cmd->commands[0], "echo") == 0) {
         return ECHO;
-    } else if (strcmp(argv, "ls") == 0) {
+    } else if (strcmp(*cmd->commands[0], "ls") == 0) {
         return LS;
-    } else if (strcmp(argv, "touch") == 0) {
+    } else if (strcmp(*cmd->commands[0], "touch") == 0) {
         return TOUCH;
-    } else if (strcmp(argv, "mv") == 0) {
+    } else if (strcmp(*cmd->commands[0], "mv") == 0) {
         return MV;
-    } else if (strcmp(argv, "cp") == 0) {
+    } else if (strcmp(*cmd->commands[0], "cp") == 0) {
         return CP;
-    } else if (strcmp(argv, "rm") == 0) {
+    } else if (strcmp(*cmd->commands[0], "rm") == 0) {
         return RM;
-    } else if (strcmp(argv, "chmod") == 0) {
+    } else if (strcmp(*cmd->commands[0], "chmod") == 0) {
         return CHMOD;
-    } else if (strcmp(argv, "ps") == 0) {
+    } else if (strcmp(*cmd->commands[0], "ps") == 0) {
         return PS;
-    } else if (strcmp(argv, "kill") == 0) {
+    } else if (strcmp(*cmd->commands[0], "kill") == 0) {
         return KILL;
-    } else if (strcmp(argv, "zombify") == 0) {
+    } else if (strcmp(*cmd->commands[0], "zombify") == 0) {
         return ZOMBIFY;
-    } else if (strcmp(argv, "orphanify") == 0) {
+    } else if (strcmp(*cmd->commands[0], "orphanify") == 0) {
         return ORPHANIFY;
-    } else if (strcmp(argv, "test_bg") == 0) {
-        return TEST_BG;
+    } else if (strcmp(*cmd->commands[0], "test") == 0) {
+        return TEST;
     } else {
         return UNKNOWN;
     }
 }
 
-bool executeLine(struct parsed_command *cmd) {
+int executeLine(struct parsed_command *cmd) {
 
     int fd_in = F_STDIN_FD;
     int fd_out = F_STDOUT_FD;
     
-    // TODO: handle the redirection
     if (cmd->stdin_file != NULL) {
         int res = f_open(cmd->stdin_file, F_READ);
         if (res < 0) {
-            return false;
+            printf("Fail to open file: %s\n", cmd->stdin_file);
+            return -1;
         }
         fd_in = res;
     }
@@ -127,8 +127,8 @@ bool executeLine(struct parsed_command *cmd) {
             fd_out = f_open(cmd->stdout_file, F_WRITE);
         }
     }
-
-    pid_t pid = executeProgram(*cmd->commands, fd_in, fd_out);
+    ProgramType programType = parseProgramType(cmd);;
+    pid_t pid = executeProgram(programType, *cmd->commands, fd_in, fd_out);
     
     if (!cmd->is_background) {
         int wstatus;
@@ -140,14 +140,15 @@ bool executeLine(struct parsed_command *cmd) {
             f_close(fd_out);
         }
     } else {
-        
+        Job *newBackgroundJob = createJob(cmd, pid, JOB_RUNNING);
+        appendJobList(&_jobList, newBackgroundJob);
+        writeJobState(newBackgroundJob);
     }
 
-    return true; 
+    return 0; 
 }
 
-pid_t executeProgram(char **argv, int fd_in, int fd_out) {
-    ProgramType programType = isKnownProgram(argv[0]);
+pid_t executeProgram(ProgramType programType, char **argv, int fd_in, int fd_out) {
     pid_t pid = -1;
     /* Switch case on user programs */
     switch (programType) {
@@ -193,11 +194,21 @@ pid_t executeProgram(char **argv, int fd_in, int fd_out) {
         case ORPHANIFY:
             pid = p_spawn(s_orphanify, argv, fd_in, fd_out);
             break;
-        case TEST_BG:
-            pid = p_spawn(s_test_bg, argv, fd_in, fd_out);
+        case HANG:
+            pid = p_spawn(s_hang, argv, fd_in, fd_out);
+            break;
+        case NOHANG:
+            pid = p_spawn(s_nohang, argv, fd_in, fd_out);
+            break;
+        case RECUR:
+            pid = p_spawn(s_recur, argv, fd_in, fd_out);
+            break;
+        case TEST:
+            pid = p_spawn(s_test, argv, fd_in, fd_out);
             break;
         default:
-            return pid;
+            printf("ERROR: UNKNOWN PROGRAM\n");
+            return -1;
     }
     return pid;
 }

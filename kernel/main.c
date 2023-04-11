@@ -4,7 +4,6 @@
 
 int main(int argc, char const *argv[])
 {
-
     // init system
     if (shell_init(argc, argv) == FAILURE) {
         perror("failed to init shell");
@@ -12,7 +11,6 @@ int main(int argc, char const *argv[])
     }
 
     swapcontext(&main_context, &scheduler_context);
-    // shell_process();
 
     return 0;
 }

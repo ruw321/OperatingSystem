@@ -41,17 +41,21 @@ void shell_process() {
 }
 
 int shell_init(int argc, const char **argv) {
-    // TODO: Error checking
+    // initialize kernel
     if (kernel_init() == FAILURE ) {
         return FAILURE;
     }
-
+    // initialize scheduler
     if (scheduler_init() == FAILURE ) {
         return FAILURE;
     }
 
-    // fs_mount(argv[1]);
-    fs_mount("test");
+    // initialize file system
+    if (fs_mount(argv[1]) == -1) {
+        return FAILURE;
+    } 
+
+    // initialize job list
     initJobList(&_jobList);
 
     // initialize main context

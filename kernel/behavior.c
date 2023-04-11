@@ -99,6 +99,8 @@ ProgramType isKnownProgram(char *argv) {
         return ZOMBIFY;
     } else if (strcmp(argv, "orphanify") == 0) {
         return ORPHANIFY;
+    } else if (strcmp(argv, "test_bg") == 0) {
+        return TEST_BG;
     } else {
         return UNKNOWN;
     }
@@ -106,22 +108,41 @@ ProgramType isKnownProgram(char *argv) {
 
 bool executeLine(struct parsed_command *cmd) {
 
-    int fd[2];
-    fd[0] = F_STDIN_FD;
-    fd[1] = F_STDOUT_FD;
+    int fd_in = F_STDIN_FD;
+    int fd_out = F_STDOUT_FD;
     
     // TODO: handle the redirection
+    if (cmd->stdin_file != NULL) {
+        int res = f_open(cmd->stdin_file, F_READ);
+        if (res < 0) {
+            return false;
+        }
+        fd_in = res;
+    }
 
-    pid_t pid = executeProgram(*cmd->commands, fd[0], fd[1]);
+    if (cmd->stdout_file != NULL) {
+        if (cmd->is_file_append) {
+            fd_out = f_open(cmd->stdout_file, F_APPEND);
+        } else {
+            fd_out = f_open(cmd->stdout_file, F_WRITE);
+        }
+    }
+
+    pid_t pid = executeProgram(*cmd->commands, fd_in, fd_out);
     
     if (!cmd->is_background) {
         int wstatus;
         p_waitpid(pid, &wstatus, false);
+        if (cmd->stdin_file != NULL) {
+            f_close(fd_in);
+        }
+        if (cmd->stdout_file != NULL) {
+            f_close(fd_out);
+        }
     } else {
         
     }
 
-   
     return true; 
 }
 
@@ -171,6 +192,9 @@ pid_t executeProgram(char **argv, int fd_in, int fd_out) {
             break;
         case ORPHANIFY:
             pid = p_spawn(s_orphanify, argv, fd_in, fd_out);
+            break;
+        case TEST_BG:
+            pid = p_spawn(s_test_bg, argv, fd_in, fd_out);
             break;
         default:
             return pid;

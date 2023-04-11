@@ -52,27 +52,30 @@ void s_cat(char *argv[]) {
             }
         }
     }
+    
 }
 
 void s_sleep(char *argv[]) {
     printf("sleeping...\n");
-    int count = argc(argv);
-    if (count == 1) {
-        printf("sleep: missing operand (sleep for how long?)\n");
-    } else if (count > 2) {
-        printf("sleep: too many arguments\n");
-    } else {
-        int sleepTime = atoi(argv[1]) * 10;
-        if (sleepTime == 0) {
-            printf("sleep: invalid time interval '%s'\n", argv[1]);
-        } else {
-            p_sleep(sleepTime);
-        }
-    }
+    // int count = argc(argv);
+    // if (count == 1) {
+    //     printf("sleep: missing operand (sleep for how long?)\n");
+    // } else if (count > 2) {
+    //     printf("sleep: too many arguments\n");
+    // } else {
+    //     int sleepTime = atoi(argv[1]) * 10;
+    //     if (sleepTime == 0) {
+    //         printf("sleep: invalid time interval '%s'\n", argv[1]);
+    //     } else {
+    //         p_sleep(sleepTime);
+    //     }
+    // }
+    
 }
 
 void s_busy(char *argv[]) {
     while (true);
+    
 }
 
 void s_echo(char *argv[]) {
@@ -94,6 +97,7 @@ void s_echo(char *argv[]) {
             }
         }
     }
+    
 }
 
 void s_ls(char *argv[]) {
@@ -105,6 +109,7 @@ void s_ls(char *argv[]) {
     } else {
         printf("ls: too many arguments\n");
     }
+    
 }
 
 void s_touch(char *argv[]) {
@@ -124,6 +129,7 @@ void s_touch(char *argv[]) {
             }
         }
     }
+    
 }
 
 void s_mv(char *argv[]) {
@@ -139,6 +145,7 @@ void s_mv(char *argv[]) {
             printf("mv: %s: No such file or directory\n", argv[1]);
         }
     }
+    
 }
 
 void s_cp(char *argv[]) {
@@ -154,6 +161,7 @@ void s_cp(char *argv[]) {
             printf("cp: %s: No such file or directory\n", argv[1]);
         }
     }
+    
 }
 
 void s_rm(char *argv[]) {
@@ -167,6 +175,7 @@ void s_rm(char *argv[]) {
             }
         }
     }
+    
 }
 
 void s_chmod(char *argv[]) {
@@ -186,6 +195,7 @@ void s_chmod(char *argv[]) {
             printf("Error: No such file %s\n", argv[2]);
         }
     }
+    
 }
 
 void s_ps(char *argv[]) {
@@ -204,6 +214,7 @@ void s_ps(char *argv[]) {
 //     } else {
 //         printf("%3d %4d %3d  ?   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->name);
 //     }
+    
 }
 
 void s_kill(char *argv[]) {
@@ -244,10 +255,11 @@ void s_kill(char *argv[]) {
             }
         }
     }
+    
 }
 
 void zombie_child() {
-    return;
+    
 }
 
 void orphan_child() {
@@ -257,24 +269,24 @@ void orphan_child() {
 void s_zombify(char *argv[]) {
     p_spawn(zombie_child, NULL, F_STDIN_FD, F_STDOUT_FD);
     while (true);
-    return;
+    
 }
 
 void s_orphanify(char *argv[]) {
     p_spawn(orphan_child, NULL, F_STDIN_FD, F_STDOUT_FD);
-    return;
+    
 }
 
 void s_hang(char *argv[]) {
-
+    
 }
 
 void s_nohang(char *argv[]) {
-
-}
+    
+}   
 
 void s_recur(char *argv[]) {
-
+    
 }
 
 void s_test(char *argv[]) {
@@ -285,5 +297,5 @@ void s_test(char *argv[]) {
     }
     
     printf("end test\n");
-
+    
 }

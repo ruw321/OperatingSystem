@@ -59,8 +59,8 @@ pcb_queue* get_pcb_queue_by_priority(priority_queue* ready_queue, int priority);
 void enqueue(pcb_queue* queue, pcb_node* node);     // Enqueue a new element to the queue
 void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* node);
 pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid);    // Dequeue the element with pid from the queue
-int dequeue_front(pcb_queue* queue);      // Dequeue the first element from the queue
-int dequeue_front_by_priority(priority_queue* ready_queue, int priority);    // Dequeue the first element from the queue based on the priority
+pcb_node *dequeue_front(pcb_queue* queue);      // Dequeue the first element from the queue
+pcb_node *dequeue_front_by_priority(priority_queue* ready_queue, int priority);    // Dequeue the first element from the queue based on the priority
 
 pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);     // Find the element with pid from the queue
 pcb_node* get_node_by_pid_from_priority_queue(priority_queue* ready_queue, pid_t pid);   // Find the element with pid from the priority queue

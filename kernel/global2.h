@@ -4,7 +4,7 @@
 /**
  * state of the process
  */ 
-enum process_state {
+typedef enum process_state {
     RUNNING,
     READY,
     BLOCKED,
@@ -13,6 +13,6 @@ enum process_state {
     ORPHANED,
     TERMINATED,     // terminated by signal
     EXITED,         // terminated normally
-};
+} process_state;
 
 #endif

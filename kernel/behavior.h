@@ -52,5 +52,8 @@ int parseLine(char *line, struct parsed_command **cmd);
 ProgramType parseProgramType(struct parsed_command *cmd);
 int executeLine(struct parsed_command *cmd);
 pid_t executeProgram(ProgramType programType, char **argv, int fd_in, int fd_out);
+void executeScript(char *argv[]);
+
+
 
 #endif

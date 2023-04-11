@@ -114,9 +114,9 @@ pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid) {
 }
 
 
-int dequeue_front(pcb_queue* queue) {
+pcb_node *dequeue_front(pcb_queue* queue) {
     if (is_empty(queue)) {
-        return -1;
+        return NULL;
     }
 
     pcb_node* current = queue->head;
@@ -129,12 +129,13 @@ int dequeue_front(pcb_queue* queue) {
         queue->head = queue->head->next;
     }
 
-    free(current);
-    return 0;
+    current->next = NULL;
+
+    return current;
 }
 
 
-int dequeue_front_by_priority(priority_queue* ready_queue, int priority) {
+pcb_node *dequeue_front_by_priority(priority_queue* ready_queue, int priority) {
     pcb_queue* queue = get_pcb_queue_by_priority(ready_queue, priority);
     return dequeue_front(queue);
 }

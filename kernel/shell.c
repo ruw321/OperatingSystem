@@ -4,18 +4,15 @@
 JobList _jobList; // store all background job
 
 void shell_process() {
-    printf("Shell process started\n");
     signal(SIGTTOU, SIG_IGN);
     char *line = NULL;
     LineType lineType;
     while (true) {
-        // TODO: flush log and errno
-        
-        // read command
+
         writePrompt();
         lineType = readAndParseUserInput(&line);
 
-        // Reap zombie processes synchronously
+
         // pollBackgroundProcesses();
         
         if (lineType == S_EXIT_SHELL) {
@@ -45,21 +42,7 @@ void shell_process() {
                             continue;
                         }
 
-                        int fd = f_open(cmd->commands[0][0], F_READ);
-                        char scriptBuffer[S_MAX_BUFFER_SIZE];
-                        memset(scriptBuffer, 0, S_MAX_BUFFER_SIZE);
-                        f_read(fd, S_MAX_BUFFER_SIZE, scriptBuffer);
-                        f_close(fd);
-
-                        char* token;
-                        token = strtok(scriptBuffer, "\n");
-                        while (token != NULL) {
-                            res = parseLine(token, &cmd);
-                            if (res == 0) {
-                                executeLine(cmd);
-                            }
-                            token = strtok(NULL, "\n");
-                        }
+                        executeLine(cmd);
                     }
                 }
             }
@@ -142,9 +125,10 @@ int shell_init(int argc, const char **argv) {
     }
 
     // initialize file system
-    if (fs_mount(argv[1]) == -1) {
-        return FAILURE;
-    } 
+    // if (fs_mount(argv[1]) == -1) {
+    //     return FAILURE;
+    // } 
+    fs_mount("test");
 
     // initialize job list
     initJobList(&_jobList);
@@ -155,7 +139,7 @@ int shell_init(int argc, const char **argv) {
     set_stack(&(main_context.uc_stack));
     main_context.uc_link = NULL;
 
-    active_process = new_pcb(&main_context, lastPID++);
+    active_process = NULL;
     p_active_context = NULL;
 
     // init shell ucontext
@@ -172,6 +156,8 @@ int shell_init(int argc, const char **argv) {
     pcb *shell_pcb = new_pcb(&shell_context, lastPID++);
     shell_pcb->priority = -1;   // the default is 0, but we want -1
     printf("shell pid: %i\n", shell_pcb->pid);
+    shell_pcb->pname = malloc(sizeof(char)*(strlen("shell"))+1);
+    strcpy(shell_pcb->pname, "shell");
     pcb_node *shell_node = new_pcb_node(shell_pcb);
 
     enqueue_by_priority(ready_queue, HIGH, shell_node);

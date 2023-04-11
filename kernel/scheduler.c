@@ -101,8 +101,7 @@ void scheduler() {
         
         //printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
-        dequeue_front_by_priority(ready_queue, active_process->priority);
-        pcb_node* currNode = new_pcb_node(active_process);
+        pcb_node *currNode = dequeue_front_by_priority(ready_queue, active_process->priority);
 
         // setting the previous state
         active_process->prev_state = active_process->state;
@@ -114,7 +113,8 @@ void scheduler() {
             // since the process hasn't completed yet, we add it back to the ready queue
             enqueue_by_priority(ready_queue, active_process->priority, currNode);
             stopped_by_timer = false;
-        } else {
+        } 
+        else {
             // check whether the process is completed or blocked or stopped
             if (active_process->ticks_to_reach <= tick_tracker && active_process->state == RUNNING) {
                 // process completed, add it to the exit queue
@@ -162,7 +162,8 @@ void scheduler() {
     active_process = next_process();
     active_process->prev_state = active_process->state;
     active_process->state = RUNNING;
-    //printf("next selected process id: %i\n", active_process->pid);
+    // printf("next selected process %s with pid: %i\n", active_process->pname, active_process->pid);
+    /* Don't touch following two lines */
     p_active_context = &active_process->ucontext;
     setcontext(p_active_context);
 }

@@ -86,33 +86,29 @@ void cleanup(pcb_queue* queue, pcb_node* child) {
 pid_t wait_for_one(pid_t pid, int *wstatus) {
     pcb* parent = active_process; // the calling thread
     // check the zombie first 
-    pcb_node* zombie = get_node_by_pid(parent->zombies, pid); 
-
-    // then check if it is in children 
-    pcb_node* child = get_node_by_pid(parent->children, pid); 
-
-    if (zombie != NULL) {
-        // set the status 
-        if (wstatus != NULL) {
-            *wstatus = zombie->pcb->state;
-        }
-        // clean up the zombie process
-        cleanup(parent->zombies, zombie);
-        return pid;
-    }
+    pcb_node* child = get_node_by_pid_all_alive_queues(pid); 
     if (child == NULL) {
-        printf("Error: cannot find a child with this pid from the calling thread\n");
+        child = get_node_by_pid(exited_queue, pid);
+    }
+
+    if (child == NULL) {
+        printf("Error: cannot find a process with this pid: %d\n", pid);
         return -1;
     }
+
+    if (child->pcb->ppid != parent->pid) {
+        printf("Error: the calling thread is not the process's parent pid: %d\n", pid);
+        return -1;
+    }
+
     // check if the state has changed
     if (child->pcb->prev_state != child->pcb->state) {
         child->pcb->prev_state = child->pcb->state;
-        if (wstatus != NULL) {
-            *wstatus = child->pcb->state;
-        }
+        *wstatus = child->pcb->state;
         return pid;
     }
-    // if WNOHANG was specified and one or more child(ren) specified by pid exist, but have not yet changed state, then 0 is returned.
+    // if WNOHANG was specified and one or more child(ren) specified by pid exist, 
+    // but have not yet changed state, then 0 is returned.
     return 0;
 }
 
@@ -230,9 +226,8 @@ pcb_node* get_node_by_pid_all_alive_queues(pid_t pid) {
 void p_exit(void) {
     // k_process_cleanup(active_process);
     // check if it the first process (shell)
-    if (active_process->pid == 1) {
-        // TODO: clean up the shell's memory
-    }
+    active_process->state = EXITED;
+    setcontext(&scheduler_context);
 }
 
 int p_nice(pid_t pid, int priority) {

@@ -140,6 +140,10 @@ int executeLine(struct parsed_command *cmd) {
             f_close(fd_out);
         }
     } else {
+        if (programType == CAT) {
+            // CAT will require Terminal Control of stdin, so it should be stopped
+            // p_kill(pid, S_SIGSTOP);
+        } 
         Job *newBackgroundJob = createJob(cmd, pid, JOB_RUNNING);
         appendJobList(&_jobList, newBackgroundJob);
         writeJobState(newBackgroundJob);
@@ -207,8 +211,28 @@ pid_t executeProgram(ProgramType programType, char **argv, int fd_in, int fd_out
             pid = p_spawn(s_test, argv, fd_in, fd_out);
             break;
         default:
-            printf("ERROR: UNKNOWN PROGRAM\n");
-            return -1;
+            pid = p_spawn(executeScript, argv, fd_in, fd_out);
     }
     return pid;
+}
+
+void executeScript(char *argv[]) {
+    char *fileName = argv[0];
+    int fd = f_open(fileName, F_READ);
+    char scriptBuffer[S_MAX_BUFFER_SIZE];
+    memset(scriptBuffer, 0, S_MAX_BUFFER_SIZE);
+    f_read(fd, S_MAX_BUFFER_SIZE, scriptBuffer);
+    f_close(fd);
+
+    struct parsed_command *cmd;
+    char* token;
+    token = strtok(scriptBuffer, "\n");
+    while (token != NULL) {
+        int res = parseLine(token, &cmd);
+        if (res == 0) {
+            executeLine(cmd);
+        }
+        token = strtok(NULL, "\n");
+    }
+    free(cmd);
 }

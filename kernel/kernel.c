@@ -108,9 +108,6 @@ int k_process_cleanup(pcb* process) {
         perror("The process to be cleanup cannot be NULL.\n");
     }
 
-    for (int fd_idx = 0; fd_idx < MAX_FILE_DESCRIPTOR; fd_idx ++) {
-        
-    }
 
     // remove it from ready queue
     pcb_queue* cur_queue = get_pcb_queue_by_priority(ready_queue, process->priority);

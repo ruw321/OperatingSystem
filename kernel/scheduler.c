@@ -162,7 +162,7 @@ void scheduler() {
     active_process = next_process();
     active_process->prev_state = active_process->state;
     active_process->state = RUNNING;
-    //printf("next selected process id: %i\n", active_process->pid);
+    log_event(active_process, "SCHEDULE");
     p_active_context = &active_process->ucontext;
     setcontext(p_active_context);
 }
@@ -225,6 +225,7 @@ int idle_process_init() {
     idle_process->pid = 0;
     idle_process->ppid = 0;
     idle_process->state = READY;
+    idle_process->pname = "IDLE";
 
     return SUCCESS;
 }

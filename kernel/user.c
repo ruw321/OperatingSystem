@@ -67,7 +67,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     enqueue(ready_queue->mid, newNode);
     // add to the children list for the parent
     enqueue(active_process->children, newNode);
-
+    log_event(pcb, "CREATE");
     return pcb->pid;
 }
 

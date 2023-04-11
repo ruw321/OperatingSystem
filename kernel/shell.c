@@ -18,27 +18,21 @@ void shell_process() {
         // Reap zombie processes synchronously
         // pollBackgroundProcesses();
         
-        if (lineType == EXIT_SHELL) {
+        if (lineType == S_EXIT_SHELL) {
             return;
         }
-        else if (lineType == EMPTY_LINE) {
+        else if (lineType == S_EMPTY_LINE) {
             writeNewline();
         }
         else {
             struct parsed_command *cmd;
             int res = parseLine(line, &cmd);
             if (res == 0) {
-                // if (executeBuiltinCommand(cmd) == false) {
-                //     if (executeLine(cmd) == false) {
-                //         printf("Error in executeProgram\n");
-                //     }
-                // }
-                int wstatus;
-                pid_t pid = p_spawn(s_ls, cmd->commands[0], 0, 1);
-
-                
-                p_waitpid(pid, &wstatus, false);
-                
+                if (executeBuiltinCommand(cmd) == false) {
+                    if (executeLine(cmd) == false) {
+                        printf("Error in executeProgram\n");
+                    }
+                }
             }
         }
         free(line);

@@ -1,6 +1,10 @@
 #ifndef PROGRAMS_H
 #define PROGRAMS_H
+
 #include "behavior.h"
+#include "../PennFAT/pennFAT.h"
+
+#define READ_BUFFER_SIZE 4096
 
 /* Known user programs */
 void s_cat(char *argv[]);

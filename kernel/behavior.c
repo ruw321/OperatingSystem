@@ -1,19 +1,12 @@
 #include "behavior.h"
 
 void writePrompt() {
-    if (write(STDERR_FILENO, PROMPT, strlen(PROMPT)) == -1) {
-        perror("Failed to write the prompt.");
-        exit(EXIT_FAILURE);
-    }
+    f_write(F_ERROR, PROMPT, strlen(PROMPT));
 }
 
 void readUserInput(char **line) {
-    char inputBuffer[MAX_LINE_LENGTH];
-    int numBytes = read(STDIN_FILENO, inputBuffer, MAX_LINE_LENGTH);
-    if (numBytes == -1) {
-        perror("Failed to read the user input.");
-        exit(EXIT_FAILURE);
-    }
+    char inputBuffer[S_MAX_LINE_LENGTH];
+    int numBytes = f_read(F_STDIN_FD, S_MAX_LINE_LENGTH, inputBuffer);
    
     if (numBytes == 0) { // read nothing but EOF (Ctrl + D at the beginning of the input line)
         *line = NULL;
@@ -47,15 +40,15 @@ void readUserInput(char **line) {
 }
 
 LineType parseUserInput(char *line) {
-    LineType lineType = EXECUTE_COMMAND;
+    LineType lineType = S_EXECUTE_COMMAND;
 
     if (line == NULL) {
-        lineType = EXIT_SHELL;
+        lineType = S_EXIT_SHELL;
         return lineType;
     }
 
     if (line[0] == '\0') {
-        lineType = EMPTY_LINE;
+        lineType = S_EMPTY_LINE;
     } 
 
     return lineType;
@@ -114,56 +107,21 @@ ProgramType isKnownProgram(char *argv) {
 bool executeLine(struct parsed_command *cmd) {
 
     int fd[2];
-    fd[0] = STDIN_FILENO;
-    fd[1] = STDOUT_FILENO;
+    fd[0] = F_STDIN_FD;
+    fd[1] = F_STDOUT_FD;
     
     // TODO: handle the redirection
 
     pid_t pid = executeProgram(*cmd->commands, fd[0], fd[1]);
-    if (pid == -1) {
-        perror("Failed to execute the program.");
-        exit(EXIT_FAILURE);
-    }
-
-    if (cmd->is_background == false) { // In non-interactive mode, & will be ignored
-
-        // tcsetpgrp(STDIN_FILENO, pids[0]); // delegate the terminal control
-
-        // bool isStopped = false;
-        // bool isKilled = false;
-
+    
+    if (!cmd->is_background) {
         int wstatus;
-        // do {
-        //     // if (waitpid(pids[i], &wstatus, WUNTRACED | WCONTINUED) > 0) {
-        //     if (p_waitpid(pid, &wstatus, false) > 0) {
-        //         // if (WIFSIGNALED(wstatus)) isKilled = true;
-        //         // if (WIFSTOPPED(wstatus)) isStopped = true;
-        //     }
-        // } while (wstatus != TERMINATED && wstatus != STOPPED);
-        // } while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus) && !WIFSTOPPED(wstatus));
         p_waitpid(pid, &wstatus, false);
-        // signal(SIGTTOU, SIG_IGN); // ignore the signal from UNIX when the main process come back from the background to get the terminal control
-        // tcsetpgrp(STDIN_FILENO, getpid()); // give back the terminal control to the main process
-
-        // if (isStopped) {
-        //     Job *newBackgroundJob = createJob(cmd, pids, JOB_STOPPED);
-        //     appendJobList(&_jobList, newBackgroundJob);
-        //     writeNewline();
-        //     writeJobState(newBackgroundJob);
-        // } else if (isKilled) {
-        //     writeNewline();
-        //     free(pids);
-        //     free(cmd);
-        // } else {
-        //     free(pids);
-        //     free(cmd);
-        // }
-
-    } else { // cmd->is_background == true
-        // Job *newBackgroundJob = createJob(cmd, pids, JOB_RUNNING);
-        // appendJobList(&_jobList, newBackgroundJob);
-        // writeJobState(newBackgroundJob);
+    } else {
+        
     }
+
+   
     return true; 
 }
 

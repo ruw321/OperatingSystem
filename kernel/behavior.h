@@ -1,7 +1,7 @@
 #ifndef BEHAVIOR_H
 #define BEHAVIOR_H
 
-#define MAX_LINE_LENGTH 8192
+#define S_MAX_LINE_LENGTH 4096
 #define PROMPT "pennOS> "
 
 #include "job.h"
@@ -9,9 +9,9 @@
 #include "programs.h"
 
 typedef enum {
-    EXIT_SHELL,
-    EMPTY_LINE,
-    EXECUTE_COMMAND
+    S_EXIT_SHELL,
+    S_EMPTY_LINE,
+    S_EXECUTE_COMMAND
 } LineType;
 
 typedef enum {

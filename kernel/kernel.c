@@ -179,16 +179,22 @@ int unblock_process(pid_t pid) {
     }
 
     pcb* cur_pcb = node->pcb;
-    cur_pcb->prev_state = BLOCKED;
-    cur_pcb->state = READY;
 
-    // remove from stopped queue  
-    dequeue_by_pid(stopped_queue, pid);
+    // remove from the stopped queue, and add it back to the ready queue
+    if (cur_pcb->state == BLOCKED && cur_pcb->ticks_to_reach < 1) {
+        if (dequeue_by_pid(stopped_queue, cur_pcb->pid) == -1) {
+            printf("Error with removing the node from the stopped queue\n");
+            return FAILURE;
+        }
 
-    // added to ready queue
-    pcb_node* p_node = new_pcb_node(cur_pcb);
-    pcb_queue *cur_queue = get_pcb_queue_by_priority(ready_queue, cur_pcb->priority);
-    enqueue(cur_queue, p_node);
+        // cur_pcb->prev_state = READY;
+        // cur_pcb->state = READY;
+        // cur_pcb->ticks_to_reach = 0;
+
+        pcb_node* p_node = new_pcb_node(cur_pcb);
+        printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
+        enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
+    }
 
     return SUCCESS;
 }

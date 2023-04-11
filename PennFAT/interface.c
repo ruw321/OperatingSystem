@@ -392,3 +392,10 @@ int f_ls(const char *filename) {
     }
     return F_SUCCESS;
 }
+
+bool f_find(const char *filename) {
+    if (findFileDirectory(fs_FATConfig, fs_FAT16InMemory, filename) == FS_NOT_FOUND) {
+        return false;
+    }
+    return true;
+}

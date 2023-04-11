@@ -32,4 +32,6 @@ int f_unlink(const char *fname);
 
 int f_ls(const char *filename);
 
+bool f_find(const char *filename);
+
 #endif

@@ -29,6 +29,7 @@ typedef enum {
     KILL,
     ZOMBIFY,
     ORPHANIFY,
+    TEST_BG,
     UNKNOWN
 } ProgramType;
 

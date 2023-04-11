@@ -1,5 +1,18 @@
 #include "user.h"
 
+bool W_WIFEXITED(int status) {
+    return status == TERMINATED;
+}
+
+bool W_WIFSTOPPED(int status) {
+    return status == STOPPED;
+}
+
+bool W_WIFSIGNALED(int status) {
+    return status == TERMINATED;
+}
+
+
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     // forks a new thread that retains most of the attributes of the parent thread 
     pcb* pcb = k_process_create(active_process);

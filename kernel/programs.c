@@ -260,3 +260,12 @@ void s_orphanify(char *argv[]) {
     p_spawn(orphan_child, NULL, F_STDIN_FD, F_STDOUT_FD);
     return;
 }
+
+void s_test_bg(char *argv[]) {
+    printf("start sleep\n");
+    long long i = 0;
+    while (i < 2000000000) {
+        i++;
+    }
+    printf("end sleep\n");
+}

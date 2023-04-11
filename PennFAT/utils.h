@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 
-#define FS_DEBUG_INFO 1
+#define FS_DEBUG_INFO 0
 
 #define FS_SUCCESS 0
 #define FS_FAILURE -1

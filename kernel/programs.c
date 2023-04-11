@@ -278,15 +278,15 @@ void s_orphanify(char *argv[]) {
 }
 
 void s_hang(char *argv[]) {
-    
+    hang();
 }
 
 void s_nohang(char *argv[]) {
-    
+    nohang();
 }   
 
 void s_recur(char *argv[]) {
-    
+    recur();
 }
 
 void s_test(char *argv[]) {

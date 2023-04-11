@@ -92,7 +92,7 @@ void scheduler() {
     // make sure the current context is not the scheduler context and ready queue is not empty
     if (p_active_context != NULL && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0 && active_process != idle_process) {
         
-        printf("active process pid: %i\n", active_process->pid);
+        // printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
         pcb_node *currNode = dequeue_front_by_priority(ready_queue, active_process->priority);
 
@@ -107,7 +107,6 @@ void scheduler() {
 
             // since the process hasn't completed yet, we add it back to the ready queue
             enqueue_by_priority(ready_queue, active_process->priority, currNode);
-            stopped_by_timer = false;
         } 
         else {
             
@@ -152,6 +151,8 @@ void scheduler() {
     active_process = next_process();
     active_process->prev_state = active_process->state;
     active_process->state = RUNNING;
+    stopped_by_timer = false;
+
     // printf("next selected process %s with pid: %i\n", active_process->pname, active_process->pid);
     /* Don't touch following two lines */
     

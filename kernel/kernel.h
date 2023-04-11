@@ -14,7 +14,7 @@ extern pcb_queue* stopped_queue;
 /**
  * create a new child thread and associated PCB. The new thread should retain much of the properties of the parent. The function should return a reference to the new PCB.
  */   
-pcb* k_process_create(pcb * parent);
+pcb *k_process_create(pcb * parent);
 
 // kill the process referenced by process with the signal signal.
 int k_process_kill(pcb *process, int signal);

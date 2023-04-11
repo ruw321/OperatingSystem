@@ -9,6 +9,10 @@ extern pcb* active_process;
 extern ucontext_t scheduler_context;
 extern int tick_tracker;
 
+bool W_WIFEXITED(int status);
+bool W_WIFSTOPPED(int status);
+bool W_WIFSIGNALED(int status);
+
 /**
 * forks a new thread that retains most of the attributes of the parent thread (see k_process_create).
 **/

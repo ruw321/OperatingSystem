@@ -22,4 +22,7 @@ void s_kill(char *argv[]);
 void s_zombify(char *argv[]);
 void s_orphanify(char *argv[]);
 
+
+void s_test_bg(char *argv[]);
+
 #endif

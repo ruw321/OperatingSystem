@@ -156,10 +156,10 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
         } else {
             // block the calling thread
             // TODO: still dk how this will block the process
-            active_process->prev_state = BLOCKED;
-            active_process->state = BLOCKED;
             // this is how children would know parent is waiting
-            active_process->ticks_to_reach = -1;    
+            active_process->ticks_to_reach = -1; 
+
+            block_process(active_process->pid);  
 
             // switch context to scheduler 
             stopped_by_timer = false;
@@ -265,8 +265,12 @@ void p_sleep(unsigned int ticks) {
     }
     // sets the calling process to blocked until ticks of the system clock elapse
     // and then sets the thread to running 
-    active_process->prev_state = BLOCKED;
-    active_process->state = BLOCKED;
+
     active_process->ticks_to_reach = tick_tracker + ticks;
+    printf("ticks to reach is %d\n", active_process->ticks_to_reach);
+    if (block_process(active_process->pid) == FAILURE) {
+        perror("Fail to block for sleep\n");
+    }
+    p_active_context = NULL;
     swapcontext(&active_process->ucontext, &scheduler_context);
 }

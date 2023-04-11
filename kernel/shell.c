@@ -41,7 +41,6 @@ void shell_process() {
                             printf("Error: Cannot execute %s\n", cmd->commands[0][0]);
                             continue;
                         }
-
                         executeLine(cmd);
                     }
                 }

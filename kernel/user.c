@@ -54,8 +54,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         num_args++;
     }
 
-    // executes the function referenced by func with its argument array argv. 
-    // TODO: change it to the number of arguments instead of 1
+    // executes the function referenced by func with its argument array argv
     makeContext(&(pcb->ucontext), func, num_args, &scheduler_context, argv);
 
     // assign process name
@@ -258,15 +257,15 @@ int p_nice(pid_t pid, int priority) {
     return pid;
 }
 
-void p_sleep(unsigned int ticks) {
-    if (ticks < 1) {
+void p_sleep(unsigned int seconds) {
+    if (seconds < 1) {
         printf("ticks has to be greater than 1\n");
         return;
     }
     // sets the calling process to blocked until ticks of the system clock elapse
     // and then sets the thread to running 
 
-    active_process->ticks_to_reach = tick_tracker + ticks;
+    active_process->ticks_to_reach = tick_tracker + seconds;
     printf("ticks to reach is %d\n", active_process->ticks_to_reach);
     if (block_process(active_process->pid) == FAILURE) {
         perror("Fail to block for sleep\n");

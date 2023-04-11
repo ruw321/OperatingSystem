@@ -23,8 +23,7 @@ extern pcb_queue* exited_queue;
 extern pcb_queue* stopped_queue;
 extern int tick_tracker;
 
-#define TICK 100000     // 1 tick = 100 milliseconds
-//#define TICK 900000     // 1 tick = 100 milliseconds
+#define TICK 100000     // 1 tick = 0.1s
 
 int set_alarm_handler();    // register signal handler for SIGALARM
 void alarm_handler();       // The signal handler for SIGALARM

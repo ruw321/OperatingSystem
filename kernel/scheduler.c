@@ -29,19 +29,16 @@ void alarm_handler(int signum)
         n = n->next;
         // sleep finished
         if (strcmp(tmp->pcb->pname, "sleep") == 0 && tmp->pcb->ticks_to_reach > 0 && tmp->pcb->ticks_to_reach <= tick_tracker && tmp->pcb->state == BLOCKED) {
-            printf("here\n");
+            printf("sleep time out\n");
             tmp->pcb->prev_state = tmp->pcb->state;
-            tmp->pcb->state = READY;
-
+            tmp->pcb->state = RUNNING;
             // add to ready queue
-            pcb_node* p_node = new_pcb_node(tmp->pcb);
-            enqueue_by_priority(ready_queue, tmp->pcb->priority, p_node);
-            // remove from stopped queue
-            dequeue_by_pid(stopped_queue, tmp->pcb->pid);
+            pcb_node* p_node = dequeue_by_pid(stopped_queue, tmp->pcb->pid);
+            enqueue_by_priority(ready_queue, p_node->pcb->priority, p_node);
         }
     }
 
-    swapcontext(p_active_context, &scheduler_context);
+    swapcontext(&active_process->ucontext, &scheduler_context);
 }
 
 
@@ -82,28 +79,6 @@ pcb* next_process() {
             continue;
         }
 
-        // printf("ticks: %i\n", chosen_queue->head->pcb->ticks_to_reach);
-        if (chosen_queue->head->pcb->ticks_to_reach != 0) {
-            if ( chosen_queue->head->pcb->ticks_to_reach <= tick_tracker) {
-                if (chosen_queue->head->pcb->ticks_to_reach > 0) {
-                    process_unblock(chosen_queue->head->pcb->pid);
-                }
-                return chosen_queue->head->pcb;
-            } else {
-                // move the head to the tail
-                // TODO: there might be a problem of adding the node back in 
-                // since the node is already freed
-
-                // pcb_node* temp = chosen_queue->head;
-                // dequeue_front(chosen_queue);
-                // enqueue(chosen_queue, temp);
-
-                pcb* temp = chosen_queue->head->pcb;
-                dequeue_front(chosen_queue);
-                pcb_node* temp_node = new_pcb_node(temp);
-                enqueue(chosen_queue, temp_node);
-            }
-        }
         // printf("next process to run is: %i\n", chosen_queue->head->pcb->pid);
         return chosen_queue->head->pcb;
     }
@@ -115,9 +90,9 @@ void scheduler() {
     // printf("scheduler is running\n");
     // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
-    if (p_active_context != NULL && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0) {
+    if (p_active_context != NULL && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0 && active_process != idle_process) {
         
-        //printf("active process pid: %i\n", active_process->pid);
+        printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
         pcb_node *currNode = dequeue_front_by_priority(ready_queue, active_process->priority);
 
@@ -126,7 +101,8 @@ void scheduler() {
 
         // check how the previous process ended
         if (stopped_by_timer) {
-            // printf("process is stopped by the timer\n");
+            
+            printf("process is stopped by the timer\n");
             active_process->state = READY;
 
             // since the process hasn't completed yet, we add it back to the ready queue
@@ -134,6 +110,7 @@ void scheduler() {
             stopped_by_timer = false;
         } 
         else {
+            
             // check whether the process is completed or blocked or stopped
             if (active_process->state == RUNNING) {
                 // process completed, add it to the exit queue
@@ -165,6 +142,7 @@ void scheduler() {
                 // TODO: orphan clean ups
                 // k_process_cleaup_orphan(active_process);
             } else {
+                
                 // waitpid hang
                 // p_sleep
             }
@@ -176,8 +154,13 @@ void scheduler() {
     active_process->state = RUNNING;
     // printf("next selected process %s with pid: %i\n", active_process->pname, active_process->pid);
     /* Don't touch following two lines */
-    p_active_context = &active_process->ucontext;
-    setcontext(p_active_context);
+    
+    if (active_process == idle_process) {
+        setcontext(&scheduler_context);
+    } else {
+        p_active_context = &active_process->ucontext;
+        setcontext(p_active_context);
+    }
 }
 
 
@@ -238,6 +221,8 @@ int idle_process_init() {
     idle_process->pid = 0;
     idle_process->ppid = 0;
     idle_process->state = READY;
+    idle_process->pname = "idle";
+    // strcpy(idle_process->pname, "idle");
 
     return SUCCESS;
 }

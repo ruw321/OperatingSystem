@@ -1,1 +1,1 @@
-# CIS548 PennOS
+# 23sp-pennOS-group-24

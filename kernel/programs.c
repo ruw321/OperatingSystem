@@ -57,19 +57,19 @@ void s_cat(char *argv[]) {
 
 void s_sleep(char *argv[]) {
     printf("sleeping...\n");
-    // int count = argc(argv);
-    // if (count == 1) {
-    //     printf("sleep: missing operand (sleep for how long?)\n");
-    // } else if (count > 2) {
-    //     printf("sleep: too many arguments\n");
-    // } else {
-    //     int sleepTime = atoi(argv[1]) * 10;
-    //     if (sleepTime == 0) {
-    //         printf("sleep: invalid time interval '%s'\n", argv[1]);
-    //     } else {
-    //         p_sleep(sleepTime);
-    //     }
-    // }
+    int count = argc(argv);
+    if (count == 1) {
+        printf("sleep: missing operand (sleep for how long?)\n");
+    } else if (count > 2) {
+        printf("sleep: too many arguments\n");
+    } else {
+        int sleepTime = atoi(argv[1]) * 10;
+        if (sleepTime == 0) {
+            printf("sleep: invalid time interval '%s'\n", argv[1]);
+        } else {
+            p_sleep(sleepTime);
+        }
+    }
     
 }
 

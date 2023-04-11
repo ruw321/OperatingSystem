@@ -19,10 +19,28 @@ int set_alarm_handler() {
 
 void alarm_handler(int signum)
 {
-    // TODO: add logic for sleep command
-    // printf("triggered the alarm\n");
     stopped_by_timer = true;
     tick_tracker++;
+
+    // check all processes in the block queue, if sleep has finished
+    pcb_node* n = stopped_queue->head;
+    while (n != NULL) {
+        pcb_node* tmp = n;
+        n = n->next;
+        // sleep finished
+        if (strcmp(tmp->pcb->pname, "sleep") == 0 && tmp->pcb->ticks_to_reach > 0 && tmp->pcb->ticks_to_reach <= tick_tracker && tmp->pcb->state == BLOCKED) {
+            printf("here\n");
+            tmp->pcb->prev_state = tmp->pcb->state;
+            tmp->pcb->state = READY;
+
+            // add to ready queue
+            pcb_node* p_node = new_pcb_node(tmp->pcb);
+            enqueue_by_priority(ready_queue, tmp->pcb->priority, p_node);
+            // remove from stopped queue
+            dequeue_by_pid(stopped_queue, tmp->pcb->pid);
+        }
+    }
+
     swapcontext(p_active_context, &scheduler_context);
 }
 
@@ -109,6 +127,7 @@ void scheduler() {
         // check how the previous process ended
         if (stopped_by_timer) {
             // printf("process is stopped by the timer\n");
+            active_process->state = READY;
 
             // since the process hasn't completed yet, we add it back to the ready queue
             enqueue_by_priority(ready_queue, active_process->priority, currNode);
@@ -116,7 +135,7 @@ void scheduler() {
         } 
         else {
             // check whether the process is completed or blocked or stopped
-            if (active_process->ticks_to_reach <= tick_tracker && active_process->state == RUNNING) {
+            if (active_process->state == RUNNING) {
                 // process completed, add it to the exit queue
                 enqueue(exited_queue, currNode);
                 //printf("process is finished (not stopped by the timer)\n");
@@ -146,19 +165,12 @@ void scheduler() {
                 // TODO: orphan clean ups
                 // k_process_cleaup_orphan(active_process);
             } else {
-                // if it is BLOCKED or STOPPED
-                if (active_process->ticks_to_reach > 0) {
-                    // BLOCKED by p_sleep 
-                    enqueue_by_priority(ready_queue, active_process->priority, currNode);
-                } else {
-                    // BLOCKED by p_waitpid, add it to the stopped queue
-                    printf("adding the process to the stopped queue: %i\n", currNode->pcb->pid);
-                    enqueue(stopped_queue, currNode);
-                }
-                // TODO: deal with processes stopped by signals
+                // waitpid hang
+                // p_sleep
             }
         }
     }
+    
     active_process = next_process();
     active_process->prev_state = active_process->state;
     active_process->state = RUNNING;

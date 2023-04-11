@@ -7,6 +7,7 @@ extern priority_queue* ready_queue;
 extern pcb* active_process;
 extern ucontext_t scheduler_context;
 extern int tick_tracker;
+extern ucontext_t* p_active_context;
 
 bool W_WIFEXITED(int status);
 bool W_WIFSTOPPED(int status);

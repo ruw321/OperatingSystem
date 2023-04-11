@@ -35,9 +35,20 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         pcb->fds[STDOUT_FILENO] = dst_node;
     }
 
+    // we might not need this:
+    int num_args = 0;
+    while (argv[num_args] != NULL) {
+        num_args++;
+    }
+
     // executes the function referenced by func with its argument array argv. 
     // TODO: change it to the number of arguments instead of 1
-    makeContext(&(pcb->ucontext), func, 1, &scheduler_context, argv);
+    makeContext(&(pcb->ucontext), func, num_args, &scheduler_context, argv);
+
+    // assign process name
+    pcb->pname = malloc(sizeof(char) * (strlen(argv[0]) + 1));
+    strcpy(pcb->pname, argv[0]);    // the first arg is the name of the func
+
     pcb_node* newNode = new_pcb_node(pcb);
     // default priority level is 0
     enqueue(ready_queue->mid, newNode);
@@ -232,11 +243,7 @@ int p_nice(pid_t pid, int priority) {
         if (target_pcb->priority != priority) {
             // change the queue
             pcb_queue* orginal_queue = get_pcb_queue_by_priority(ready_queue, target_pcb->priority);
-            if (dequeue_by_pid(orginal_queue, pid) == -1) {
-                printf("Error removing the node from the queue\n");
-                return -1;
-            }
-            enqueue_by_priority(ready_queue, priority, new_pcb_node(target_pcb));
+            enqueue_by_priority(ready_queue, priority, dequeue_by_pid(orginal_queue, pid));
         } 
     }
 

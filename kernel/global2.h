@@ -11,7 +11,8 @@ enum process_state {
     STOPPED,
     ZOMBIED,
     ORPHANED,
-    TERMINATED,     // terminated normally
+    TERMINATED,     // terminated by signal
+    EXITED,         // terminated normally
 };
 
 #endif

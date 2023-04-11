@@ -10,6 +10,7 @@ pcb* new_pcb(ucontext_t* ucontext, pid_t pid) {
     pcb_n->zombies = new_pcb_queue();
     pcb_n->ticks_to_reach = 0;
     pcb_n->priority = 0;
+    pcb_n->is_sleep = false;
 
     for (int i = 0; i < MAX_FILE_DESCRIPTOR; i++) {
         pcb_n->fds[i] = NULL;
@@ -212,7 +213,7 @@ int pick_priority() {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts); // Get current time
     // Seed random number generator with XOR of sec and nsec fields
-    srand(ts.tv_nsec ^ ts.tv_sec); 
+    srand(ts.tv_nsec ^ ts.tv_sec);
     // The ratio of low:mid:high should be 4:6:9. Thus, random generate a int from 1 to 19 and use it to decide which queue to use
     int num = rand() % 18;  // generate a random number between 0 and 18
     if (num <= 3) {

@@ -64,12 +64,17 @@ int k_process_kill(pcb *process, int signal) {
         }
 
     } else if (signal == SIGCONT) {
-        // TODO: special case for sleep
         // TODO: what should the prev_state be?
         if (process->state == STOPPED) {
-            process->state = READY;
-            pcb_node* new_node = new_pcb_node(process);
-            enqueue_by_priority(ready_queue, process->priority, new_node);
+            // TODO: Why this?
+            if (process->is_sleep) {
+                process->prev_state = BLOCKED;
+                process->state = BLOCKED;
+            } else {
+                process->state = READY;
+                pcb_node* new_node = new_pcb_node(process);
+                enqueue_by_priority(ready_queue, process->priority, new_node);
+            }
         }
     } else if (signal == SIGTERM) {
         process->prev_state = process->state;
@@ -101,6 +106,10 @@ int k_process_kill(pcb *process, int signal) {
 int k_process_cleanup(pcb* process) {
     if (process == NULL) {
         perror("The process to be cleanup cannot be NULL.\n");
+    }
+
+    for (int fd_idx = 0; fd_idx < MAX_FILE_DESCRIPTOR; fd_idx ++) {
+        
     }
 
     // remove it from ready queue
@@ -179,18 +188,21 @@ int unblock_process(pid_t pid) {
     }
 
     pcb* cur_pcb = node->pcb;
-    cur_pcb->prev_state = READY;
-    cur_pcb->state = READY;
-    cur_pcb->ticks_to_reach = 0;
 
     // remove from the stopped queue, and add it back to the ready queue
-    if (unblock_node->pcb->state == BLOCKED && unblock_node->pcb->ticks_to_reach < 1) {
-        if (dequeue_by_pid(stopped_queue, unblock_node->pcb->pid) == -1) {
+    if (cur_pcb->state == BLOCKED && cur_pcb->ticks_to_reach < 1) {
+        if (dequeue_by_pid(stopped_queue, cur_pcb->pid) == -1) {
             printf("Error with removing the node from the stopped queue\n");
             return FAILURE;
         }
+
+        // cur_pcb->prev_state = READY;
+        // cur_pcb->state = READY;
+        // cur_pcb->ticks_to_reach = 0;
+
         pcb_node* p_node = new_pcb_node(cur_pcb);
-        enqueue_by_priority(ready_queue, unblock_node->pcb->priority, p_node);
+        printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
+        enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
     }
 
     return SUCCESS;

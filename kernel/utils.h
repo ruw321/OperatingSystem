@@ -26,6 +26,7 @@ typedef struct pcb {
     int ticks_to_reach;     // > 1 represents the wait times, -1 means parent is waiting
     struct pcb_queue* children;     // processes that have not completed yet
     struct pcb_queue* zombies;      // processes that are completed but the parent has not waited for it yet
+    char* pname;    // name of the function 
     // TODO: other fields to be added
 } pcb;
 
@@ -57,7 +58,7 @@ pcb_queue* get_pcb_queue_by_priority(priority_queue* ready_queue, int priority);
 
 void enqueue(pcb_queue* queue, pcb_node* node);     // Enqueue a new element to the queue
 void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* node);
-int dequeue_by_pid(pcb_queue* queue, pid_t pid);    // Dequeue the element with pid from the queue
+pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid);    // Dequeue the element with pid from the queue
 int dequeue_front(pcb_queue* queue);      // Dequeue the first element from the queue
 int dequeue_front_by_priority(priority_queue* ready_queue, int priority);    // Dequeue the first element from the queue based on the priority
 

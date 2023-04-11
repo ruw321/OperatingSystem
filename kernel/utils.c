@@ -11,6 +11,7 @@ pcb* new_pcb(ucontext_t* ucontext, pid_t pid) {
     pcb_n->ticks_to_reach = 0;
     pcb_n->priority = 0;
     pcb_n->state = READY;
+    pcb_n->pname = "";
 
     for (int i = 0; i < MAX_FILE_DESCRIPTOR; i++) {
         pcb_n->fds[i] = NULL;
@@ -80,9 +81,9 @@ void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* no
 }
 
 
-int dequeue_by_pid(pcb_queue* queue, pid_t pid) {
+pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid) {
     if (is_empty(queue)) {
-        return -1;
+        return NULL;
     }
     pcb_node* current = queue->head;
     pcb_node* previous = NULL;
@@ -107,9 +108,9 @@ int dequeue_by_pid(pcb_queue* queue, pid_t pid) {
         current = current->next;
     }
 
-    // Free the memory for the deleted node
-    free(current);
-    return 0;
+    // // Free the memory for the deleted node
+    // free(current);
+    return current;
 }
 
 

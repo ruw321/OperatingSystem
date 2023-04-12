@@ -137,38 +137,37 @@ CommandType parseBuiltinCommandType(struct parsed_command *cmd) {
 }
 
 /* Execute built-in command wrapped up */
-int executeBuiltinCommand(struct parsed_command *cmd) {
+CommandType executeBuiltinCommand(struct parsed_command *cmd) {
     CommandType cmdType = parseBuiltinCommandType(cmd);
 
     switch(cmdType) {
         case NICE:
-            niceBuildinCommand(cmd);
-            break;
+            // niceBuildinCommand(cmd);
+            return NICE;
         case NICE_PID:
             nicePidBuildinCommand(cmd);
-            break;
+            return NICE_PID;
         case MAN:
             manBuildinCommand();
-            break;
+            return MAN;
         case BG:
             bgBuildinCommand(cmd);
-            break;
+            return BG;
         case FG:
             fgBuildinCommand(cmd);
-            break;
+            return FG;
         case JOBS:
             jobsBuiltinCommand();
-            break;
+            return JOBS;
         case LOGOUT:
-            logoutBuiltinCommand();
-            break;
+            // logoutBuiltinCommand();
+            return LOGOUT;
         default:
             printf("ERROR: OTHER COMMAND\n");
             free(cmd);
-            return -1;
+            return OTHERS;
     }
-    free(cmd);
-    return 0;
+    return OTHERS;
 }
 
 
@@ -177,28 +176,106 @@ void jobsBuiltinCommand() {
 }
 
 void bgBuildinCommand(struct parsed_command *cmd) {
-
+    int jobId = (cmd->commands[0][1] != NULL)? atoi(cmd->commands[0][1]) : -1;
+    Job *job;
+    if (jobId != -1) {
+        job = findJobListByJobId(&_jobList, jobId);
+    } else { // use the current job by default
+        job = findTheCurrentJob(&_jobList);
+    }
+    if (job == NULL || job->state == JOB_RUNNING) {
+        printf("ERROR: failed to find the stopped job\n");
+    } else {
+        p_kill(job->pid, S_SIGCONT);
+        updateJobList(&_jobList, job->pid, JOB_RUNNING);
+        writeJobState(job);
+    }
 }
 
 void fgBuildinCommand(struct parsed_command *cmd) {
+    int jobId = (cmd->commands[0][1] != NULL)? atoi(cmd->commands[0][1]) : -1;
+    Job *job;
+    if (jobId != -1) {
+        job = findJobListByJobId(&_jobList, jobId);
+    } else { // use the current job by default
+        job = findTheCurrentJob(&_jobList);
+    }
+    if (job == NULL) {
+        printf("ERROR: failed to find the stopped job\n");
+    } else {
+        fgPid = job->pid;
+        if (job->state == JOB_STOPPED) {
+            printf("Restarting: ");
+        }
+        printCommandLine(job->cmd);
 
+        pid_t pid = job->pid;
+        // TODO: 
+        // tcsetpgrp(STDIN_FILENO, pid); // delegate the terminal control
+        p_kill(pid, S_SIGCONT);
+
+        int wstatus = 0;
+        p_waitpid(pid, &wstatus, false);
+
+        // TODO:
+        // signal(SIGTTOU, SIG_IGN); // ignore the signal from UNIX when the main process come back from the background to get the terminal control
+        // tcsetpgrp(STDIN_FILENO, getpid()); // give back the terminal control to the main process
+        
+        if (W_WIFEXITED(wstatus)) {
+            removeJobList(&_jobList, pid);
+        } else if (W_WIFSIGNALED(wstatus)) {
+            writeNewline(); // only need to consider interactive mode
+            removeJobList(&_jobList, pid);
+        } else if (W_WIFSTOPPED(wstatus)) {
+            struct parsed_command *cmd = job->cmd;
+            removeJobListWithoutFreeCmd(&_jobList, pid);
+            Job *newBackgroundJob = createJob(cmd, pid, JOB_STOPPED);
+            appendJobList(&_jobList, newBackgroundJob);
+            writeNewline();
+            writeJobState(newBackgroundJob);
+        }
+        fgPid = -1;
+    }
 }
 
-void niceBuildinCommand(struct parsed_command *cmd) {
-
-}
+// void niceBuildinCommand(struct parsed_command *cmd) {
+//     int priority = atoi(cmd->commands[0][1]);
+    
+// }
 
 void nicePidBuildinCommand(struct parsed_command *cmd) {
-
+    int priority = atoi(cmd->commands[0][1]);
+    pid_t pid = atoi(cmd->commands[0][2]);
+    p_nice(pid, priority);
 }
 
 void manBuildinCommand() {
-
+    printf("zombify \n");
+    printf("orphanify \n");
+    printf("cat [file ...] \n");
+    printf("sleep [seconds] \n");
+    printf("busy \n");
+    printf("echo [string ...] \n");
+    printf("ls \n");
+    printf("touch [file ...] \n");
+    printf("mv [src] [dest] \n");
+    printf("cp [src] [dest] \n");
+    printf("rm [file ...] \n");
+    printf("chmod [mode] [file] \n");
+    printf("ps \n");
+    printf("kill [-signal_name] [pid] \n");
+    printf("nice [priority] [cmd] \n");
+    printf("nice_pid [priority] [pid] \n");
+    printf("man \n");
+    printf("bg [job_id] \n");
+    printf("fg [job_id] \n");
+    printf("jobs \n");
+    printf("logout \n");
 }
 
-void logoutBuiltinCommand() {
+// void logoutBuiltinCommand() {
 
-}
+// }
 
 
 
@@ -378,4 +455,66 @@ Job *popJobList(JobList *jobList, pid_t pid) {
         curNode = curNode->next;
     }
     return NULL; // not found
+}
+
+void clearJobList(JobList *jobList) {
+    JobListNode *nextNode = jobList->head->next;
+    JobListNode *curNode = nextNode;
+    while (curNode != jobList->tail) {
+        nextNode = curNode->next;
+
+        pid_t pid = curNode->job->pid;
+        p_kill(pid, S_SIGTERM);
+        int wstatus;
+
+        p_waitpid(pid, &wstatus, false);
+        free(curNode->job->cmd);
+        free(curNode->job);
+        free(curNode);
+
+        curNode = nextNode;
+    }
+
+    free(jobList->head);
+    free(jobList->tail);
+}
+
+void pollBackgroundProcesses() {
+    int wstatus;
+    pid_t pid;
+    pid = p_waitpid(-1, &wstatus, true);
+    if (pid == -1) {
+        return;
+    }
+    if (W_WIFEXITED(wstatus)) {
+        Job *job = updateJobList(&_jobList, pid, JOB_FINISHED);
+        writeJobState(job);
+        removeJobList(&_jobList, pid);
+    } else if (W_WIFSIGNALED(wstatus)) {
+        Job *job = updateJobList(&_jobList, pid, JOB_TERMINATED);
+        writeJobState(job);
+        removeJobList(&_jobList, pid);
+    } else if (W_WIFSTOPPED(wstatus)) {
+        Job *job = updateJobList(&_jobList, pid, JOB_STOPPED);
+        writeJobState(job);
+    }
+}
+
+Job *findTheCurrentJob(JobList *jobList) {
+    Job *curJob = NULL;
+    JobListNode *curNode = jobList->tail->prev;
+    int curNodeId = 0;
+
+    while (curNode != jobList->head) {
+        if (curNode->job->state == JOB_STOPPED) {
+            curJob = curNode->job;
+            break;
+        } else if (curNode->job->state == JOB_RUNNING && curNode->jobId > curNodeId) {
+            curJob = curNode->job;
+            curNodeId = curNode->jobId;
+        }
+        curNode = curNode->prev;
+    }
+
+    return curJob;
 }

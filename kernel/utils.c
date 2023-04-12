@@ -12,6 +12,7 @@ pcb* new_pcb(ucontext_t* ucontext, pid_t pid) {
     pcb_n->priority = 0;
     pcb_n->state = READY;
     pcb_n->pname = "";
+    pcb_n->toWait = false;
 
     for (int i = 0; i < MAX_FILE_DESCRIPTOR; i++) {
         pcb_n->fds[i] = NULL;
@@ -256,4 +257,14 @@ int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_con
         makecontext(ucp, func, argc, argv);
     }
     return SUCCESS;
+}
+
+int printQueue(pcb_queue *queue) {
+    pcb_node *node = queue->head;
+    printf("######### Start Print Queue ##########\n");
+    while (node) {
+        printf("process %s with pid = %d\n", node->pcb->pname, node->pcb->pid);
+    }
+    return 0;
+    printf("######### Finish Print Queue ##########\n");
 }

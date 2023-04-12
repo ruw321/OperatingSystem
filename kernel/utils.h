@@ -28,6 +28,7 @@ typedef struct pcb {
     struct pcb_queue* zombies;      // processes that are completed but the parent has not waited for it yet
     char* pname;    // name of the function 
     // TODO: other fields to be added
+    bool toWait;
 } pcb;
 
 typedef struct pcb_node {
@@ -76,6 +77,7 @@ void set_stack(stack_t *stack);        // initialize stack for ucontext
 
 int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_context, char *argv[]); // initializing context
 
+int printQueue(pcb_queue *queue);
 
 typedef enum {
     JOB_RUNNING,

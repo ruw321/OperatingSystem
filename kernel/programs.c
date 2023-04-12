@@ -56,7 +56,7 @@ void s_cat(char *argv[]) {
 }
 
 void s_sleep(char *argv[]) {
-    printf("sleeping...\n");
+    // printf("sleeping...\n");
     int count = argc(argv);
     if (count == 1) {
         printf("sleep: missing operand (sleep for how long?)\n");

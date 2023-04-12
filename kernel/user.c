@@ -1,7 +1,7 @@
 #include "user.h"
 
 bool W_WIFEXITED(int status) {
-    return status == TERMINATED;
+    return status == EXITED;
 }
 
 bool W_WIFSTOPPED(int status) {
@@ -64,6 +64,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     pcb_node* newNode1 = new_pcb_node(pcb);
     // default priority level is 0
     // printf("spawned. add to ready queue: %d\n", newNode->pcb->pid);
+    log_event(pcb, "EQ_READY_S");
     enqueue(ready_queue->mid, newNode1);
     // add to the children list for the parent
     pcb_node* newNode2 = new_pcb_node(pcb);
@@ -113,7 +114,7 @@ pid_t wait_for_one(pid_t pid, int *wstatus) {
         return -1;
     }
 
-    if (child->pcb->prev_state != child->pcb->state) {
+    if (child->pcb->prev_state != child->pcb->state && !(child->pcb->prev_state == RUNNING && child->pcb->state == READY)) {
         child->pcb->prev_state = child->pcb->state;
         
         if (wstatus != NULL) {
@@ -146,7 +147,7 @@ pid_t wait_for_anyone(int *wstatus) {
     pcb_queue* children = active_process->children;
     if (!is_empty(children)) {
         for (pcb_node* child = children->head; child != NULL; child = child->next) {
-            if (child->pcb->prev_state != child->pcb->state) {
+            if (child->pcb->prev_state != child->pcb->state && !(child->pcb->prev_state == RUNNING && child->pcb->state == READY)) {
                 child->pcb->prev_state = child->pcb->state;
                 // set the status
                 if (wstatus != NULL) {
@@ -160,6 +161,11 @@ pid_t wait_for_anyone(int *wstatus) {
 }
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+
+    
     // if there is no children to wait for, return -1
     if (is_empty(active_process->children) && is_empty(active_process->zombies)) {
         return -1;
@@ -172,6 +178,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             return wait_for_one(pid, wstatus);
         } else {
             // if there are zombies, reap and return right away
+            sigprocmask(SIG_BLOCK, &mask, NULL);
             pid_t result = wait_for_one(pid, wstatus);
             if (result != 0) {
                 return result;
@@ -181,10 +188,14 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             // TODO: still dk how this will block the process
             // this is how children would know parent is waiting
             active_process->ticks_to_reach = -1; 
-            block_process(active_process->pid);
+            pcb_node *child = get_node_by_pid(active_process->children, pid);
+            child->pcb->toWait = true;
 
+            block_process(active_process->pid);
             // switch context to scheduler 
             stopped_by_timer = false;
+
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);
             swapcontext(&active_process->ucontext, &scheduler_context);
 
             // at this point, the parent process should be unblocked
@@ -203,8 +214,9 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             if (nohang) {
                 return wait_for_anyone(wstatus);
             } else {
-
+                sigprocmask(SIG_BLOCK, &mask, NULL);
                 pid_t result = wait_for_anyone(wstatus);
+                // printf("wait for anyone result 1: %d\n", result);
                 if (result != 0) {
                     return result;
                 }
@@ -213,6 +225,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 active_process->ticks_to_reach = -1; 
 
                 block_process(active_process->pid);
+                sigprocmask(SIG_UNBLOCK, &mask, NULL);
 
                 // switch context to scheduler 
                 stopped_by_timer = false;
@@ -220,6 +233,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 swapcontext(&active_process->ucontext, &scheduler_context);
 
                 result = wait_for_anyone(wstatus);
+                // printf("wait for anyone result 2: %d\n", result);
 
                 if (result == 0) {
                     printf("cannot 0, should return pid instead because nohang is false\n");
@@ -299,7 +313,7 @@ void p_sleep(unsigned int seconds) {
     // and then sets the thread to running 
 
     active_process->ticks_to_reach = tick_tracker + seconds;
-    printf("ticks to reach is %d\n", active_process->ticks_to_reach);
+    // printf("ticks to reach is %d\n", active_process->ticks_to_reach);
 
     block_process(active_process->pid);
     p_active_context = NULL;

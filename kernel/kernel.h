@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "global.h"
 #include "job.h"
+#include "log.h"
 
 extern ucontext_t scheduler_context;
 extern pid_t lastPID;

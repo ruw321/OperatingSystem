@@ -162,6 +162,8 @@ int block_process(pid_t pid) {
 
     enqueue(stopped_queue, p_node);
 
+    log_event(cur_pcb, "BLOCKED");
+
     return SUCCESS;
 }
 
@@ -190,7 +192,7 @@ int unblock_process(pid_t pid) {
         printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
         enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
     }
-
+    log_event(cur_pcb, "UNBLOCKED");
     return SUCCESS;
 }
 
@@ -217,5 +219,6 @@ int process_unblock(pid_t pid) {
         // printf("adding the node back to the ready queue: %i\n", tempNode->pcb->pid);
         enqueue_by_priority(ready_queue, tempNode->pcb->priority, tempNode);
     }
+    log_event(unblock_node->pcb, "UNBLOCKED");
     return 0;
 }

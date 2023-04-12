@@ -135,10 +135,10 @@ void scheduler() {
                         }
                     }
                     // remove the node from children queue and add it to the zombies queue
-                    dequeue_by_pid(parent->pcb->children, active_process->pid);
+                    pcb_node *newZombie = dequeue_by_pid(parent->pcb->children, active_process->pid);
                     // printf("move node to zombies\n");
-                    
-                    enqueue(parent->pcb->zombies, currNode);
+
+                    enqueue(parent->pcb->zombies, newZombie);
                 } else {
                     printf("Active process's pid %d ppid %d\n", active_process->pid, active_process->ppid);
                     printf("Parent node is not supposed to be null\n");
@@ -150,6 +150,7 @@ void scheduler() {
     }
     
     active_process = next_process();
+    log_event(active_process, "SCHEDULE");
     p_active_context = &active_process->ucontext;
     active_process->state = RUNNING;
     stopped_by_timer = false;

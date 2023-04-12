@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "global.h"
 #include "kernel.h"
+#include "log.h"
 
 extern pcb* active_process;
 extern priority_queue* ready_queue;
@@ -23,7 +24,7 @@ extern pcb_queue* exited_queue;
 extern pcb_queue* stopped_queue;
 extern int tick_tracker;
 
-#define TICK 900000     // 1 tick = 0.1s
+#define TICK 100000     // 1 tick = 0.1s
 
 int set_alarm_handler();    // register signal handler for SIGALARM
 void alarm_handler();       // The signal handler for SIGALARM

@@ -61,13 +61,15 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     pcb->pname = malloc(sizeof(char) * (strlen(argv[0]) + 1));
     strcpy(pcb->pname, argv[0]);    // the first arg is the name of the func
 
-    pcb_node* newNode = new_pcb_node(pcb);
+    pcb_node* newNode1 = new_pcb_node(pcb);
     // default priority level is 0
     // printf("spawned. add to ready queue: %d\n", newNode->pcb->pid);
-    enqueue(ready_queue->mid, newNode);
+    enqueue(ready_queue->mid, newNode1);
     // add to the children list for the parent
-    enqueue(active_process->children, newNode);
+    pcb_node* newNode2 = new_pcb_node(pcb);
+    enqueue(active_process->children, newNode2);
 
+    log_event(pcb, "CREATE");
     return pcb->pid;
 }
 

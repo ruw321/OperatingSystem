@@ -5,6 +5,7 @@
 #include "job.h"
 #include "user.h"
 #include "behavior.h"
+#include "log.h"
 #include "../PennFAT/filesys.h"
 #include "../PennFAT/interface.h"
 

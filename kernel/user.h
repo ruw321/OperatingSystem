@@ -20,7 +20,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1);
 
 // helper functions for waitpid
 pid_t wait_for_one(pid_t pid, int *wstatus);
-pid_t wait_for_anyone(pid_t pid, int *wstatus);
+pid_t wait_for_anyone(int *wstatus);
 
 // sets the calling thread as blocked (if nohang is false) until a child of the calling thread changes state
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang);

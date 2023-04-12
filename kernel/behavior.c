@@ -99,6 +99,12 @@ ProgramType parseProgramType(struct parsed_command *cmd) {
         return ZOMBIFY;
     } else if (strcmp(*cmd->commands[0], "orphanify") == 0) {
         return ORPHANIFY;
+    } else if (strcmp(*cmd->commands[0], "hang") == 0) {
+        return HANG;
+    } else if (strcmp(*cmd->commands[0], "nohang") == 0) {
+        return NOHANG;
+    } else if (strcmp(*cmd->commands[0], "recur") == 0) {
+        return RECUR;
     } else if (strcmp(*cmd->commands[0], "test") == 0) {
         return TEST;
     } else {

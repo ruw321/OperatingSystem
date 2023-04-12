@@ -44,8 +44,9 @@ static void spawn(bool nohang)
     argv[0][sizeof name - 2] = '0' + i;
     const int id = p_spawn(nap, argv, F_STDIN_FD, F_STDOUT_FD);
 
-    if (i == 0)
+    if (i == 0){
       pid = id;
+    }
 
     dprintf(STDERR_FILENO, "%s was spawned\n", *argv);
   }

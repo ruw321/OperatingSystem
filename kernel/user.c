@@ -181,7 +181,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             return wait_for_one(pid, wstatus);
         } else {
             // if there are zombies, reap and return right away
-            sigprocmask(SIG_BLOCK, &mask, NULL);
+            // sigprocmask(SIG_BLOCK, &mask, NULL);
             pid_t result = wait_for_one(pid, wstatus);
             if (result != 0) {
                 return result;
@@ -198,7 +198,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             // switch context to scheduler 
             stopped_by_timer = false;
 
-            sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            // sigprocmask(SIG_UNBLOCK, &mask, NULL);
             swapcontext(&active_process->ucontext, &scheduler_context);
 
             // at this point, the parent process should be unblocked
@@ -332,7 +332,6 @@ void signal_handler(int signal) {
             writePrompt();
         }
     } else {
-        fgPid = 2;
         if (signal == SIGINT) {
             p_kill(fgPid, S_SIGTERM);
         } else if (signal == SIGTSTP) {

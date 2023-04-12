@@ -56,8 +56,9 @@ int k_process_kill(pcb *process, int signal) {
 
         // remove process from ready queue if existed
         pcb_queue* cur_queue = get_pcb_queue_by_priority(ready_queue, process->priority);
-        dequeue_by_pid(cur_queue, process->pid);
-        
+        pcb_node *node = dequeue_by_pid(cur_queue, process->pid);
+        enqueue(stopped_queue, node);
+
         // If this is a foreground process, unblock it's parent
         if (process->pid == fgPid) {
             process_unblock(process->ppid);

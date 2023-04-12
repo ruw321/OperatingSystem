@@ -75,10 +75,15 @@ int k_process_kill(pcb *process, int signal) {
                 process->prev_state = process->state;
                 process->state = BLOCKED;
             } else {
-                process->prev_state = process->state;
+                process->prev_state = READY;
                 process->state = READY;
-                pcb_node* new_node = new_pcb_node(process);
-                enqueue_by_priority(ready_queue, process->priority, new_node);
+                pcb_node* new_node = dequeue_by_pid(stopped_queue, process->pid);
+                if (new_node == NULL) {
+                    perror("new_node should not be NULL.\n");
+
+                } else {
+                    enqueue_by_priority(ready_queue, process->priority, new_node);
+                }
             }       
         }
     } else if (signal == S_SIGTERM) {

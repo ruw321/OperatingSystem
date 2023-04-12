@@ -74,10 +74,10 @@ void printJobList(JobList *jobList) {
         JobState state = curNode->job->state;
 
         switch (state) {
-            case RUNNING:
+            case JOB_RUNNING:
                 statePrompt = runningPrompt;
                 break;
-            case STOPPED:
+            case JOB_STOPPED:
                 statePrompt = stoppedPrompt;
                 break;
             default:
@@ -208,7 +208,7 @@ void fgBuildinCommand(struct parsed_command *cmd) {
             printf("Restarting: ");
         }
         printCommandLine(job->cmd);
-
+        
         pid_t pid = job->pid;
         // TODO: 
         // tcsetpgrp(STDIN_FILENO, pid); // delegate the terminal control

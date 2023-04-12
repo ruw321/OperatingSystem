@@ -146,6 +146,7 @@ int executeLine(struct parsed_command *cmd, int priority) {
     if (!cmd->is_background) {
         int wstatus;
         p_waitpid(pid, &wstatus, false);
+
         fgPid = 1;
         if (cmd->stdin_file != NULL) {
             f_close(fd_in);
@@ -153,6 +154,18 @@ int executeLine(struct parsed_command *cmd, int priority) {
         if (cmd->stdout_file != NULL) {
             f_close(fd_out);
         }
+
+        if (W_WIFEXITED(wstatus)) {
+            free(cmd);
+        } else if (W_WIFSIGNALED(wstatus)) {
+            free(cmd);
+        } else if (W_WIFSTOPPED(wstatus)) {
+            Job *newBackgroundJob = createJob(cmd, pid, JOB_STOPPED);
+            appendJobList(&_jobList, newBackgroundJob);
+            writeNewline();
+            writeJobState(newBackgroundJob);
+        }
+        
     } else {
         if (programType == CAT) {
             // CAT will require Terminal Control of stdin, so it should be stopped

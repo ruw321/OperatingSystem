@@ -2,6 +2,7 @@
 #define PROGRAMS_H
 
 #include "behavior.h"
+#include "stress.h"
 #include "../PennFAT/pennFAT.h"
 
 #define READ_BUFFER_SIZE 4096

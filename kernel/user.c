@@ -54,8 +54,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         num_args++;
     }
 
-    // executes the function referenced by func with its argument array argv. 
-    // TODO: change it to the number of arguments instead of 1
+    // executes the function referenced by func with its argument array argv
     makeContext(&(pcb->ucontext), func, num_args, &scheduler_context, argv);
 
     // assign process name
@@ -64,6 +63,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     pcb_node* newNode = new_pcb_node(pcb);
     // default priority level is 0
+    // printf("spawned. add to ready queue: %d\n", newNode->pcb->pid);
     enqueue(ready_queue->mid, newNode);
     // add to the children list for the parent
     enqueue(active_process->children, newNode);
@@ -84,51 +84,66 @@ void cleanup(pcb_queue* queue, pcb_node* child) {
 }
 
 pid_t wait_for_one(pid_t pid, int *wstatus) {
+
     pcb* parent = active_process; // the calling thread
-    // check the zombie first 
-    pcb_node* child = get_node_by_pid_all_alive_queues(pid); 
+    
+    pcb_node* child = get_node_by_pid_all_alive_queues(pid); // ready & stopped queue
     if (child == NULL) {
         child = get_node_by_pid(exited_queue, pid);
     }
+
+
+    // reap zombie
+    pcb_node* zombie = get_node_by_pid(parent->zombies, pid);
+    if (zombie != NULL) {
+        dequeue_by_pid(parent->zombies, pid);
+    }
+
 
     if (child == NULL) {
         printf("Error: cannot find a process with this pid: %d\n", pid);
         return -1;
     }
 
+
     if (child->pcb->ppid != parent->pid) {
         printf("Error: the calling thread is not the process's parent pid: %d\n", pid);
         return -1;
     }
 
-    // check if the state has changed
     if (child->pcb->prev_state != child->pcb->state) {
         child->pcb->prev_state = child->pcb->state;
-        *wstatus = child->pcb->state;
+        
+        if (wstatus != NULL) {
+            *wstatus = child->pcb->state;
+        }
+        
         return pid;
     }
+
+
     // if WNOHANG was specified and one or more child(ren) specified by pid exist, 
     // but have not yet changed state, then 0 is returned.
     return 0;
 }
 
-pid_t wait_for_anyone(pid_t pid, int *wstatus) {
+pid_t wait_for_anyone(int *wstatus) {
     // if zombie queue is not empty, then we return the first zombie
     if (!is_empty(active_process->zombies)) {
         pcb_node* zombie_node = active_process->zombies->head;
         pid_t zombiePID = zombie_node->pcb->pid;
-        zombie_node->pcb->prev_state = zombie_node->pcb->state;
         // set the status
         if (wstatus != NULL) {
             *wstatus = zombie_node->pcb->state;
         }
-        cleanup(active_process->zombies, zombie_node);
+        dequeue_by_pid(active_process->zombies, zombiePID);
         return zombiePID;
     }
+
     // then we traverse through the children 
     pcb_queue* children = active_process->children;
     if (!is_empty(children)) {
-        for (pcb_node* child = children->head; child != children->tail; child = child->next) {
+        for (pcb_node* child = children->head; child != NULL; child = child->next) {
             if (child->pcb->prev_state != child->pcb->state) {
                 child->pcb->prev_state = child->pcb->state;
                 // set the status
@@ -154,19 +169,26 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             // non blocking
             return wait_for_one(pid, wstatus);
         } else {
+            // if there are zombies, reap and return right away
+            pid_t result = wait_for_one(pid, wstatus);
+            if (result != 0) {
+                return result;
+            }
+
             // block the calling thread
             // TODO: still dk how this will block the process
             // this is how children would know parent is waiting
             active_process->ticks_to_reach = -1; 
-
-            block_process(active_process->pid);  
+            block_process(active_process->pid);
 
             // switch context to scheduler 
             stopped_by_timer = false;
             swapcontext(&active_process->ucontext, &scheduler_context);
 
             // at this point, the parent process should be unblocked
-            pid_t result = wait_for_one(pid, wstatus);
+            result = wait_for_one(pid, wstatus);
+
+
 
             if (result == 0) {
                 printf("cannot 0, should return pid instead because nohang is false\n");
@@ -175,19 +197,27 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             return result;
         }
     } else {
-        // pid == -1
         if (pid == -1) {
-
             if (nohang) {
-                return wait_for_anyone(pid, wstatus);
+                return wait_for_anyone(wstatus);
             } else {
+
+                pid_t result = wait_for_anyone(wstatus);
+                if (result != 0) {
+                    return result;
+                }
+
                 // block parent, remove it from the ready queue and switch context
-                active_process->prev_state = BLOCKED;
-                active_process->state = BLOCKED;
-                stopped_by_timer = true;
+                active_process->ticks_to_reach = -1; 
+
+                block_process(active_process->pid);
+
+                // switch context to scheduler 
+                stopped_by_timer = false;
+
                 swapcontext(&active_process->ucontext, &scheduler_context);
 
-                pid_t result = wait_for_anyone(pid, wstatus);
+                result = wait_for_anyone(wstatus);
 
                 if (result == 0) {
                     printf("cannot 0, should return pid instead because nohang is false\n");
@@ -258,19 +288,18 @@ int p_nice(pid_t pid, int priority) {
     return pid;
 }
 
-void p_sleep(unsigned int ticks) {
-    if (ticks < 1) {
+void p_sleep(unsigned int seconds) {
+    if (seconds < 1) {
         printf("ticks has to be greater than 1\n");
         return;
     }
     // sets the calling process to blocked until ticks of the system clock elapse
     // and then sets the thread to running 
 
-    active_process->ticks_to_reach = tick_tracker + ticks;
+    active_process->ticks_to_reach = tick_tracker + seconds;
     printf("ticks to reach is %d\n", active_process->ticks_to_reach);
-    if (block_process(active_process->pid) == FAILURE) {
-        perror("Fail to block for sleep\n");
-    }
+
+    block_process(active_process->pid);
     p_active_context = NULL;
     swapcontext(&active_process->ucontext, &scheduler_context);
 }

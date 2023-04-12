@@ -29,7 +29,6 @@ void alarm_handler(int signum)
         n = n->next;
         // sleep finished
         if (strcmp(tmp->pcb->pname, "sleep") == 0 && tmp->pcb->ticks_to_reach > 0 && tmp->pcb->ticks_to_reach <= tick_tracker && tmp->pcb->state == BLOCKED) {
-            printf("sleep time out\n");
             tmp->pcb->prev_state = tmp->pcb->state;
             tmp->pcb->state = RUNNING;
             // add to ready queue
@@ -104,6 +103,7 @@ void scheduler() {
 
         // check how the previous process ended
         if (stopped_by_timer) {
+            // printf("add back to the queue active process state = %d pid = %d\n", active_process->state, active_process->pid);
             
             // printf("process is stopped by the timer\n");
             active_process->state = READY;
@@ -114,6 +114,10 @@ void scheduler() {
         else {
             // printf("active process state = %d pid = %d\n", active_process->state, active_process->pid);
             // check whether the process is completed or blocked or stopped
+
+            // here: we don't know whether the process has finished running or not
+            // since only process that is unblocked can come in here
+
             if (active_process->state == RUNNING) {
                 currNode->pcb->state = ZOMBIED;
                 // process completed, add it to the exit queue
@@ -136,6 +140,7 @@ void scheduler() {
                     
                     enqueue(parent->pcb->zombies, currNode);
                 } else {
+                    printf("Active process's pid %d ppid %d\n", active_process->pid, active_process->ppid);
                     printf("Parent node is not supposed to be null\n");
                 }
                 // TODO: orphan clean ups
@@ -239,21 +244,3 @@ pcb_node* get_node_by_pid_all_queues(pid_t pid) {
     }
 }
 
-int haveChildrenToWait(pcb *process) {
-    if (process == NULL) {
-        printf("Error: Can not check NULL's children\n");
-        return -1;
-    }
-    if (is_empty(process->children)) {
-        return 0;
-    } else {
-        pcb_node *node = process->children->head;
-        while (node != NULL) {
-            if (node->pcb->state == STOPPED || node->pcb->state == BLOCKED) {
-                return 1;
-            }
-            node = node->next;
-        }
-        return 0;
-    }
-}

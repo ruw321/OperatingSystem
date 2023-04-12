@@ -145,6 +145,7 @@ int k_process_cleanup(pcb* process) {
 
 int block_process(pid_t pid) {
     // find the process in ready queue given its pid
+
     pcb_node* node = get_node_by_pid_from_priority_queue(ready_queue, pid);
     if (node == NULL) {
         perror("Process is not in the ready queue.\n");
@@ -179,14 +180,14 @@ int unblock_process(pid_t pid) {
     pcb* cur_pcb = node->pcb;
 
     // remove from the stopped queue, and add it back to the ready queue
-    if (cur_pcb->state == BLOCKED && cur_pcb->ticks_to_reach < 1) {
+    if (cur_pcb->state == BLOCKED) {
         pcb_node* p_node = dequeue_by_pid(stopped_queue, cur_pcb->pid);
 
         cur_pcb->prev_state = cur_pcb->state;
         cur_pcb->state = READY;
         cur_pcb->ticks_to_reach = 0; // to indicate that parent no longer waits for its child
 
-        // printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
+        printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
         enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
     }
 
@@ -203,7 +204,7 @@ int process_unblock(pid_t pid) {
     }
 
     // remove from the stopped queue, and add it back to the ready queue
-    if (unblock_node->pcb->state == BLOCKED && unblock_node->pcb->ticks_to_reach < 1) {
+    if (unblock_node->pcb->state == BLOCKED) {
 
         pcb_node* tempNode = dequeue_by_pid(stopped_queue, unblock_node->pcb->pid);
 

@@ -71,6 +71,7 @@ void enqueue(pcb_queue* queue, pcb_node* node) {
         queue->tail = node;
         return;
     }
+    node->next = NULL;
     queue->tail->next = node;
     queue->tail = node;
 }     
@@ -107,7 +108,7 @@ pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid) {
         previous = current;
         current = current->next;
     }
-
+    current->next = NULL;
     return current;
 }
 

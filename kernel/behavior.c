@@ -133,7 +133,7 @@ int executeLine(struct parsed_command *cmd) {
             fd_out = f_open(cmd->stdout_file, F_WRITE);
         }
     }
-    ProgramType programType = parseProgramType(cmd);;
+    ProgramType programType = parseProgramType(cmd);
     pid_t pid = executeProgram(programType, *cmd->commands, fd_in, fd_out);
     
     if (!cmd->is_background) {

@@ -124,6 +124,11 @@ int shell_init(int argc, const char **argv) {
         return FAILURE;
     }
 
+    // initialize signal handlers
+    if (register_signals() == FAILURE ) {
+        return FAILURE;
+    }
+
     // initialize file system
     // if (fs_mount(argv[1]) == -1) {
     //     return FAILURE;

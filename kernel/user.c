@@ -12,6 +12,36 @@ bool W_WIFSIGNALED(int status) {
     return status == TERMINATED;
 }
 
+void signal_handler(int signal) {
+    // if shell, PROMPT again
+    if (fgPid == 1) {
+        if (signal == SIGINT || signal == SIGTSTP) {
+            writePrompt();
+        }
+    } else {
+        fgPid = 2;
+        if (signal == SIGINT) {
+            p_kill(fgPid, S_SIGTERM);
+        } else if (signal == SIGTSTP) {
+            p_kill(fgPid, S_SIGSTOP);
+        }
+    }
+}
+
+int register_signals() {
+    if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        perror("Failed to register handler for SIGINT.\n");
+        return FAILURE;
+    }
+
+    if (signal(SIGTSTP, signal_handler) == SIG_ERR) {
+        perror("Failed to register handler for SIGSTOP.\n");
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
 
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     // forks a new thread that retains most of the attributes of the parent thread 
@@ -234,12 +264,13 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig) {
-    // TODO: search by pid in all queues
+    printf("The process calling p_kill is %d\n", pid);
     pcb_node* target_node = get_node_by_pid_all_alive_queues(pid);
     if (target_node == NULL) {
         printf("target node with the pid %i does not exist\n", pid);
         return -1;
     }
+    // TODO: stop or terminate foreground job
     return k_process_kill(target_node->pcb, sig);
 }
 

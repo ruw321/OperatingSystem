@@ -224,20 +224,20 @@ int idle_process_init() {
     return SUCCESS;
 }
 
-pcb_node* get_node_by_pid_all_queues(pid_t pid) {
-    pcb_node* ready_node = get_node_from_ready_queue(ready_queue, pid);
-    if (ready_node == NULL) {
-        pcb_node* stop_node = get_node_by_pid(stopped_queue, pid);
-        if (stop_node == NULL) {
-            pcb_node* exit_node = get_node_by_pid(exited_queue, pid);
-            return exit_node;
-        } else {
-            return stop_node;
-        }
-    } else {
-        return ready_node;
-    }
-}
+// pcb_node* get_node_by_pid_all_queues(pid_t pid) {
+//     pcb_node* ready_node = get_node_from_ready_queue(ready_queue, pid);
+//     if (ready_node == NULL) {
+//         pcb_node* stop_node = get_node_by_pid(stopped_queue, pid);
+//         if (stop_node == NULL) {
+//             pcb_node* exit_node = get_node_by_pid(exited_queue, pid);
+//             return exit_node;
+//         } else {
+//             return stop_node;
+//         }
+//     } else {
+//         return ready_node;
+//     }
+// }
 
 int haveChildrenToWait(pcb *process) {
     if (process == NULL) {

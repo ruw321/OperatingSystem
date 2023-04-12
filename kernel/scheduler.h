@@ -31,7 +31,7 @@ int set_timer();   // set up time interval for SIGALARM
 
 pcb* next_process();    // get the next process to run from the ready queue based on priority 
 
-pcb_node* get_node_by_pid_all_queues(pid_t pid);     // Find the element with pid from all the queues
+// pcb_node* get_node_by_pid_all_queues(pid_t pid);     // Find the element with pid from all the queues
 
 void scheduler();   // The function of scheduler
 

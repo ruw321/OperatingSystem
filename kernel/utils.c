@@ -181,6 +181,22 @@ pcb_node* get_node_by_pid_from_priority_queue(priority_queue* ready_queue, pid_t
     return NULL;
 }
 
+
+pcb_node* get_node_by_pid_all_queues(pid_t pid) {
+    pcb_node* ready_node = get_node_from_ready_queue(ready_queue, pid);
+    if (ready_node == NULL) {
+        pcb_node* stop_node = get_node_by_pid(stopped_queue, pid);
+        if (stop_node == NULL) {
+            pcb_node* exit_node = get_node_by_pid(exited_queue, pid);
+            return exit_node;
+        } else {
+            return stop_node;
+        }
+    } else {
+        return ready_node;
+    }
+}
+
 void deconstruct_queue(pcb_queue* queue) {
     pcb_node* current = queue->head;
     while (current != NULL) {

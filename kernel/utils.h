@@ -13,6 +13,8 @@
 #include "global2.h"
 #include "../PennFAT/fd-table.h"
 
+
+
 typedef struct pcb {
     ucontext_t ucontext;
     pid_t pid;
@@ -46,6 +48,10 @@ typedef struct priority_queue {
     pcb_queue* low;     // priority 1
 } priority_queue;
 
+extern priority_queue* ready_queue;
+extern pcb_queue* exited_queue;
+extern pcb_queue* stopped_queue;
+
 pcb* new_pcb(ucontext_t* ucontext, pid_t pid);
 pcb_node* new_pcb_node(pcb* pcb);       // Create a new pcb node with the given data
 pcb_queue* new_pcb_queue();     // Create an empty pcb queue
@@ -64,6 +70,8 @@ pcb_node *dequeue_front_by_priority(priority_queue* ready_queue, int priority); 
 
 pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);     // Find the element with pid from the queue
 pcb_node* get_node_by_pid_from_priority_queue(priority_queue* ready_queue, pid_t pid);   // Find the element with pid from the priority queue
+
+pcb_node* get_node_by_pid_all_queues(pid_t pid);
 
 void deconstruct_queue(pcb_queue* queue);   // free the pcb queue
 void deconstruct_priority_queue(priority_queue* ready_queue);   // free the pcb priority queue

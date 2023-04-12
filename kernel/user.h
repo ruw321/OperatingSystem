@@ -13,9 +13,15 @@ extern ucontext_t* p_active_context;
 extern JobList _jobList;
 extern pid_t fgPid;
 
+extern void writePrompt();
+
 bool W_WIFEXITED(int status);
 bool W_WIFSTOPPED(int status);
 bool W_WIFSIGNALED(int status);
+
+void signal_handler(int signal);
+
+int register_signals();
 
 /**
 * forks a new thread that retains most of the attributes of the parent thread (see k_process_create).

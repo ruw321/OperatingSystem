@@ -2,6 +2,7 @@
 #include "scheduler.h"
 
 JobList _jobList; // store all background job
+pid_t fgPid = -1;
 
 void shell_process() {
     signal(SIGTTOU, SIG_IGN);

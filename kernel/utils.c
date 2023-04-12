@@ -108,8 +108,6 @@ pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid) {
         current = current->next;
     }
 
-    // // Free the memory for the deleted node
-    // free(current);
     return current;
 }
 

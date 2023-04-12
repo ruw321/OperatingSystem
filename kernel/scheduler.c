@@ -92,11 +92,13 @@ void scheduler() {
     // make sure the current context is not the scheduler context and ready queue is not empty
     
     if (p_active_context != NULL && active_process->state != BLOCKED && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0 && active_process != idle_process) {
-        
+      
         // printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
         pcb_node *currNode = dequeue_front_by_priority(ready_queue, active_process->priority);
-
+        if (active_process->pid != currNode->pcb->pid) {
+            printf("Error: active process is not the head of the ready queue\n");
+        }
         // setting the previous state
         active_process->prev_state = active_process->state;
 
@@ -113,17 +115,12 @@ void scheduler() {
             // printf("active process state = %d pid = %d\n", active_process->state, active_process->pid);
             // check whether the process is completed or blocked or stopped
             if (active_process->state == RUNNING) {
+                currNode->pcb->state = ZOMBIED;
                 // process completed, add it to the exit queue
                 enqueue(exited_queue, currNode);
+               
                 //printf("process is finished (not stopped by the timer)\n");
-                //TODO: if the process exited either normally or by signal
-                if (true) {
-                    // exited normally
-                    active_process->state = EXITED;
-                } else {
-                    // stopped by signal
-                    active_process->state = TERMINATED;
-                }
+         
                 pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
                 if (parent != NULL) {
                     // if the parent is blocked waiting for it, unblock the parent
@@ -136,6 +133,7 @@ void scheduler() {
                     // remove the node from children queue and add it to the zombies queue
                     dequeue_by_pid(parent->pcb->children, active_process->pid);
                     // printf("move node to zombies\n");
+                    
                     enqueue(parent->pcb->zombies, currNode);
                 } else {
                     printf("Parent node is not supposed to be null\n");

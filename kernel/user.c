@@ -84,6 +84,7 @@ void cleanup(pcb_queue* queue, pcb_node* child) {
 }
 
 pid_t wait_for_one(pid_t pid, int *wstatus) {
+
     pcb* parent = active_process; // the calling thread
     
     pcb_node* child = get_node_by_pid_all_alive_queues(pid); // ready & stopped queue
@@ -91,28 +92,36 @@ pid_t wait_for_one(pid_t pid, int *wstatus) {
         child = get_node_by_pid(exited_queue, pid);
     }
 
+
     // reap zombie
     pcb_node* zombie = get_node_by_pid(parent->zombies, pid);
     if (zombie != NULL) {
         dequeue_by_pid(parent->zombies, pid);
     }
 
+
     if (child == NULL) {
         printf("Error: cannot find a process with this pid: %d\n", pid);
         return -1;
     }
+
 
     if (child->pcb->ppid != parent->pid) {
         printf("Error: the calling thread is not the process's parent pid: %d\n", pid);
         return -1;
     }
 
-    // check if the state has changed
     if (child->pcb->prev_state != child->pcb->state) {
         child->pcb->prev_state = child->pcb->state;
-        *wstatus = child->pcb->state;
+        
+        if (wstatus != NULL) {
+            *wstatus = child->pcb->state;
+        }
+        
         return pid;
     }
+
+
     // if WNOHANG was specified and one or more child(ren) specified by pid exist, 
     // but have not yet changed state, then 0 is returned.
     return 0;
@@ -178,6 +187,8 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
             // at this point, the parent process should be unblocked
             result = wait_for_one(pid, wstatus);
+
+
 
             if (result == 0) {
                 printf("cannot 0, should return pid instead because nohang is false\n");

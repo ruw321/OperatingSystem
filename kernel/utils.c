@@ -8,7 +8,7 @@ pcb* new_pcb(ucontext_t* ucontext, pid_t pid) {
     pcb_n->pid = pid;
     pcb_n->children = new_pcb_queue();
     pcb_n->zombies = new_pcb_queue();
-    pcb_n->ticks_to_reach = 0;
+    pcb_n->ticks_left = 0;
     pcb_n->priority = 0;
     pcb_n->state = READY;
     pcb_n->pname = "";

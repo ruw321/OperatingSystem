@@ -57,7 +57,9 @@ int k_process_kill(pcb *process, int signal) {
         // remove process from ready queue if existed
         pcb_queue* cur_queue = get_pcb_queue_by_priority(ready_queue, process->priority);
         pcb_node *node = dequeue_by_pid(cur_queue, process->pid);
-        enqueue(stopped_queue, node);
+        if (node != NULL) {
+            enqueue(stopped_queue, node);
+        }
 
         // If this is a foreground process, unblock it's parent
         if (process->pid == fgPid) {
@@ -200,7 +202,7 @@ int unblock_process(pid_t pid) {
         cur_pcb->prev_state = cur_pcb->state;
         cur_pcb->state = READY;
         
-        cur_pcb->ticks_to_reach = 0; // to indicate that parent no longer waits for its child
+        cur_pcb->ticks_left = 0; // to indicate that parent no longer waits for its child
 
         printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
         enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
@@ -226,7 +228,7 @@ int process_unblock(pid_t pid) {
 
         tempNode->pcb->prev_state = READY;
         tempNode->pcb->state = READY;
-        tempNode->pcb->ticks_to_reach = 0; // to indicate that parent no longer waits for its child
+        tempNode->pcb->ticks_left = 0; // to indicate that parent no longer waits for its child
 
         // printf("adding the node back to the ready queue: %i\n", tempNode->pcb->pid);
         enqueue_by_priority(ready_queue, tempNode->pcb->priority, tempNode);

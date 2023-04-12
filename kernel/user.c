@@ -190,7 +190,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             // block the calling thread
             // TODO: still dk how this will block the process
             // this is how children would know parent is waiting
-            active_process->ticks_to_reach = -1; 
+            active_process->ticks_left = -1; 
             // pcb_node *child = get_node_by_pid(active_process->children, pid);
             // child->pcb->toWait = true;
 
@@ -226,7 +226,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 }
 
                 // block parent, remove it from the ready queue and switch context
-                active_process->ticks_to_reach = -1; 
+                active_process->ticks_left = -1; 
 
                 block_process(active_process->pid);
                 sigprocmask(SIG_UNBLOCK, &mask, NULL);
@@ -317,8 +317,8 @@ void p_sleep(unsigned int seconds) {
     // sets the calling process to blocked until ticks of the system clock elapse
     // and then sets the thread to running 
 
-    active_process->ticks_to_reach = tick_tracker + seconds;
-    // printf("ticks to reach is %d\n", active_process->ticks_to_reach);
+    active_process->ticks_left = seconds;
+    // printf("ticks to reach is %d\n", active_process->ticks_left);
 
     block_process(active_process->pid);
     p_active_context = NULL;

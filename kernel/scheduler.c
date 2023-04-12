@@ -28,12 +28,18 @@ void alarm_handler(int signum)
         pcb_node* tmp = n;
         n = n->next;
         // sleep finished
-        if (strcmp(tmp->pcb->pname, "sleep") == 0 && tmp->pcb->ticks_to_reach > 0 && tmp->pcb->ticks_to_reach <= tick_tracker && tmp->pcb->state == BLOCKED) {
-            tmp->pcb->prev_state = tmp->pcb->state;
-            tmp->pcb->state = RUNNING;
-            // add to ready queue
-            pcb_node* p_node = dequeue_by_pid(stopped_queue, tmp->pcb->pid);
-            enqueue_by_priority(ready_queue, p_node->pcb->priority, p_node);
+        if (strcmp(tmp->pcb->pname, "sleep") == 0) {
+            if (tmp->pcb->state != STOPPED) {
+                if (tmp->pcb->ticks_left > 0) {
+                    tmp->pcb->ticks_left --;
+                } else{
+                    tmp->pcb->state = RUNNING;
+                    // add to ready queue
+                    pcb_node* p_node = dequeue_by_pid(stopped_queue, tmp->pcb->pid);
+                    enqueue_by_priority(ready_queue, p_node->pcb->priority, p_node);
+                }
+            }
+            
         }
     }
 
@@ -152,9 +158,9 @@ void scheduler() {
 
                         // if the parent is blocked waiting for it, unblock the parent
                         // printf("unblocking the parent: %i\n", parent->pcb->pid);
-                        if (parent->pcb->ticks_to_reach == -1) {
+                        if (parent->pcb->ticks_left == -1) {
                             pcb_node* parent = get_node_by_pid(stopped_queue, active_process->ppid);
-                            parent->pcb->ticks_to_reach = 0;
+                            parent->pcb->ticks_left = 0;
                             process_unblock(active_process->ppid);
                         }
 

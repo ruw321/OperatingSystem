@@ -23,7 +23,7 @@ typedef struct pcb {
     int input_fd;
     int output_fd;
     FdNode *fds[MAX_FILE_DESCRIPTOR];   // keep track of open FDs
-    int ticks_to_reach;     // > 1 represents the wait times, -1 means parent is waiting
+    int ticks_left;     // > 1 represents the wait times, -1 means parent is waiting
     struct pcb_queue* children;     // processes that have not completed yet
     struct pcb_queue* zombies;      // processes that are completed but the parent has not waited for it yet
     char* pname;    // name of the function 

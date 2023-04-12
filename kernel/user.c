@@ -64,7 +64,6 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     pcb_node* newNode1 = new_pcb_node(pcb);
     // default priority level is 0
     // printf("spawned. add to ready queue: %d\n", newNode->pcb->pid);
-    log_event(pcb, "ADD_TO_READY");
     enqueue(ready_queue->mid, newNode1);
     // add to the children list for the parent
     pcb_node* newNode2 = new_pcb_node(pcb);
@@ -86,7 +85,6 @@ void cleanup(pcb_queue* queue, pcb_node* child) {
 }
 
 pid_t wait_for_one(pid_t pid, int *wstatus) {
-    log_event(active_process, "WAIT_FOR_ONE");
     pcb* parent = active_process; // the calling thread
     
     pcb_node* child = get_node_by_pid_all_alive_queues(pid); // ready & stopped queue
@@ -220,6 +218,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 return wait_for_anyone(wstatus);
             } else {
                 sigprocmask(SIG_BLOCK, &mask, NULL);
+                log_event(active_process, "WAIT_1");
                 pid_t result = wait_for_anyone(wstatus);
                 // printf("wait for anyone result 1: %d\n", result);
                 if (result != 0) {
@@ -237,6 +236,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
                 swapcontext(&active_process->ucontext, &scheduler_context);
 
+                log_event(active_process, "WAIT_2");
                 result = wait_for_anyone(wstatus);
                 // printf("wait for anyone result 2: %d\n", result);
 

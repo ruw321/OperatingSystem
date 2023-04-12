@@ -99,23 +99,14 @@ void scheduler() {
       
         // printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
-        log_event(active_process, "DQ_READY_S");
-        if (is_priority_queue_empty(ready_queue)) {
-            printf("Ready queue is not supposed to be empty\n");
-        }
-        if (is_empty(get_pcb_queue_by_priority(ready_queue, active_process->priority))) {
-            printf("Ready queue's queue is not supposed to be empty\n");
-        }
         pcb_node *currNode = dequeue_front_by_priority(ready_queue, active_process->priority);
-        log_event(active_process, "DQ_READY_DONE");
+        log_event(active_process, "DQ_READY_SCHD");
         if (active_process->pid != currNode->pcb->pid) {
             printf("Error: active process is not the head of the ready queue\n");
         }
-        log_event(active_process, "DQ_READY_DONE2");
 
         // check how the previous process ended
         if (stopped_by_timer) {
-            log_event(active_process, "TIMERSTOP");
             // printf("add back to the queue active process state = %d pid = %d\n", active_process->state, active_process->pid);
             
             // printf("process is stopped by the timer\n");
@@ -123,8 +114,9 @@ void scheduler() {
             active_process->state = READY;
 
             // since the process hasn't completed yet, we add it back to the ready queue
-            log_event(active_process, "EQ_READY_T");
+            log_event(active_process, "EQ_READY_TOUT");
             enqueue_by_priority(ready_queue, active_process->priority, currNode);
+            stopped_by_timer = false;
         } 
         else {
             // printf("active process state = %d pid = %d\n", active_process->state, active_process->pid);
@@ -134,7 +126,7 @@ void scheduler() {
             // since only process that is unblocked can come in here
 
             // printQueue(ready_queue->mid);
-            log_event(active_process, "NOT_RUNNING");
+            log_event(active_process, "FINISHED");
 
             if (active_process->state == RUNNING) {
                     
@@ -148,10 +140,8 @@ void scheduler() {
                 active_process->state = EXITED;
 
                 //printf("process is finished (not stopped by the timer)\n");
-                log_event(active_process, "GET_PARENT");
                 pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
                 if (parent != NULL) {
-                    log_event(active_process, "MOVE_TO_Z");
                     // remove the node from children queue and add it to the zombies queue
                     pcb_node *newZombie = dequeue_by_pid(parent->pcb->children, active_process->pid);
                     newZombie->pcb->toWait = false;

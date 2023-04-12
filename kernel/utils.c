@@ -109,7 +109,10 @@ pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid) {
         previous = current;
         current = current->next;
     }
-    current->next = NULL;
+    if (current != NULL) {
+        current->next = NULL;
+    }
+    
     return current;
 }
 
@@ -129,7 +132,9 @@ pcb_node *dequeue_front(pcb_queue* queue) {
         queue->head = queue->head->next;
     }
 
-    current->next = NULL;
+    if (current != NULL) {
+        current->next = NULL;
+    }
 
     return current;
 }

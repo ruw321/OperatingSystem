@@ -132,9 +132,9 @@ int shell_init(int argc, const char **argv) {
     }
 
     // initialize signal handlers
-    if (register_signals() == FAILURE ) {
-        return FAILURE;
-    }
+    // if (register_signals() == FAILURE ) {
+    //     return FAILURE;
+    // }
 
     // initialize logger
     log_init();

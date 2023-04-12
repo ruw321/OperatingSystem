@@ -19,7 +19,7 @@ void signal_handler(int signal) {
             writePrompt();
         }
     } else {
-        fgPid = 2;
+        // fgPid = 2;
         if (signal == SIGINT) {
             p_kill(fgPid, S_SIGTERM);
         } else if (signal == SIGTSTP) {

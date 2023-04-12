@@ -93,10 +93,12 @@ int k_process_kill(pcb *process, int signal) {
             perror("Parent node should not be NULL.\n");
             return FAILURE;
         }
-        printf("parent is %d\n", parent_node->pcb->pid);
+        // printf("parent is %d\n", parent_node->pcb->pid);
         pcb* parent_pcb = parent_node->pcb;
         pcb_node* p_node = dequeue_by_pid(parent_pcb->children, process->pid);
-        enqueue(parent_pcb->zombies, p_node);
+        enqueue(exited_queue, p_node);
+        pcb_node* p_node2 = new_pcb_node(p_node->pcb);
+        enqueue(parent_pcb->zombies, p_node2);
 
         // If this is a foreground process, unblock it's parent
         if (process->pid == fgPid) {

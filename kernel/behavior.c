@@ -135,7 +135,11 @@ int executeLine(struct parsed_command *cmd, int priority) {
     }
     ProgramType programType = parseProgramType(cmd);;
     pid_t pid = executeProgram(programType, *cmd->commands, fd_in, fd_out);
-    fgPid = pid;
+    
+    if (!cmd->is_background) {
+        fgPid = pid;
+    }
+
     // TODO: bug in p_nice example nice 1 sleep 1
     if (priority != MID) p_nice(pid, priority);
     

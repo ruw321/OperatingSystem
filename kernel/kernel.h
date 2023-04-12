@@ -3,6 +3,7 @@
 #include <signal.h>
 #include "utils.h"
 #include "global.h"
+#include "job.h"
 
 extern ucontext_t scheduler_context;
 extern pid_t lastPID;
@@ -10,6 +11,9 @@ extern priority_queue* ready_queue;
 extern bool stopped_by_timer;
 extern pcb_queue* exited_queue;
 extern pcb_queue* stopped_queue;
+
+extern JobList _jobList;
+extern pid_t fgPid;
 
 /**
  * create a new child thread and associated PCB. The new thread should retain much of the properties of the parent. The function should return a reference to the new PCB.

@@ -76,4 +76,45 @@ void set_stack(stack_t *stack);        // initialize stack for ucontext
 
 int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_context, char *argv[]); // initializing context
 
+
+typedef enum {
+    JOB_RUNNING,
+    JOB_STOPPED,
+    JOB_FINISHED,
+    JOB_TERMINATED
+} JobState;
+
+
+typedef enum {
+    NICE, // Syntax: nice priority command [args]
+    NICE_PID, // Syntax: nice_pid priority pid
+    MAN, // Syntax: man
+    BG, // Syntax: bg [job_id]
+    FG, // Syntax: fg [job_id]
+    JOBS, // Syntax: jobs
+    LOGOUT, // Syntax: logout
+    OTHERS // non-builtin command
+} CommandType;
+
+typedef struct Job {
+    struct parsed_command *cmd;
+    pid_t pid;
+    JobState state;
+} Job;
+
+typedef struct JobListNode {
+    Job *job;
+    struct JobListNode *prev;
+    struct JobListNode *next;
+    int jobId;
+} JobListNode;
+
+typedef struct JobList {
+    JobListNode *head;
+    JobListNode *tail;
+    int jobCount;
+} JobList;
+
+
+
 #endif

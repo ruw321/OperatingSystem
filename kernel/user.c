@@ -164,8 +164,8 @@ pid_t wait_for_anyone(int *wstatus) {
 }
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
-    printf("waitpid is called withh pid: %d\n", pid);
-    printf("waitpid is called withh active process: %d\n", active_process->pid);
+    // printf("waitpid is called withh pid: %d\n", pid);
+    // printf("waitpid is called withh active process: %d\n", active_process->pid);
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGALRM);
@@ -323,4 +323,34 @@ void p_sleep(unsigned int seconds) {
     block_process(active_process->pid);
     p_active_context = NULL;
     swapcontext(&active_process->ucontext, &scheduler_context);
+}
+
+void signal_handler(int signal) {
+    // if shell, PROMPT again
+    if (fgPid == 1) {
+        if (signal == SIGINT || signal == SIGTSTP) {
+            writePrompt();
+        }
+    } else {
+        fgPid = 2;
+        if (signal == SIGINT) {
+            p_kill(fgPid, S_SIGTERM);
+        } else if (signal == SIGTSTP) {
+            p_kill(fgPid, S_SIGSTOP);
+        }
+    }
+}
+
+int register_signals() {
+    if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        perror("Failed to register handler for SIGINT.\n");
+        return FAILURE;
+    }
+
+    if (signal(SIGTSTP, signal_handler) == SIG_ERR) {
+        perror("Failed to register handler for SIGSTOP.\n");
+        return FAILURE;
+    }
+
+    return SUCCESS;
 }

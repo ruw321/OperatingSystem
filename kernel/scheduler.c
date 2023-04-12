@@ -112,8 +112,6 @@ void scheduler() {
             printf("Error: active process is not the head of the ready queue\n");
         }
         log_event(active_process, "DQ_READY_DONE2");
-        // setting the previous state
-        active_process->prev_state = active_process->state;
 
         // check how the previous process ended
         if (stopped_by_timer) {
@@ -121,6 +119,7 @@ void scheduler() {
             // printf("add back to the queue active process state = %d pid = %d\n", active_process->state, active_process->pid);
             
             // printf("process is stopped by the timer\n");
+            active_process->prev_state = READY;
             active_process->state = READY;
 
             // since the process hasn't completed yet, we add it back to the ready queue
@@ -144,7 +143,7 @@ void scheduler() {
                 
                 log_event(currNode->pcb, "EQ_EXIT");
                 enqueue(exited_queue, currNode);
-
+ 
                 active_process->prev_state = active_process->state;
                 active_process->state = EXITED;
 

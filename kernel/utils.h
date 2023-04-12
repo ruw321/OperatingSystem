@@ -121,4 +121,10 @@ pcb_queue* sortQueue(pcb_queue* queue);
 
 pcb_queue* merge_two_queues(pcb_queue* queue1, pcb_queue* queue2);
 
+extern priority_queue* ready_queue;
+extern pcb_queue* exited_queue;
+extern pcb_queue* stopped_queue;
+
+extern pcb_node* get_node_by_pid_all_queues(pid_t pid);
+
 #endif

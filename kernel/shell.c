@@ -2,7 +2,7 @@
 #include "scheduler.h"
 
 JobList _jobList; // store all background job
-pid_t fgPid = -1;
+pid_t fgPid = 1;
 
 void shell_process() {
     signal(SIGTTOU, SIG_IGN);
@@ -130,6 +130,12 @@ int shell_init(int argc, const char **argv) {
     if (scheduler_init() == FAILURE ) {
         return FAILURE;
     }
+
+    // initialize signal handlers
+    if (register_signals() == FAILURE ) {
+        return FAILURE;
+    }
+
     // initialize logger
     log_init();
     // initialize file system

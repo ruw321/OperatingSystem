@@ -203,6 +203,8 @@ void s_ps(char *argv[]) {
     sigemptyset(&mask);
     sigaddset(&mask, SIGALRM);
 
+    // sigprocmask(SIG_BLOCK, &mask, NULL);
+
     printf("PID PPID PRI STAT CMD\n");
     pcb_node *e;
 
@@ -214,7 +216,7 @@ void s_ps(char *argv[]) {
 
     pcb_queue *merged = merge_two_queues(merge_two_queues(merge_two_queues(merge_two_queues(low, mid), high), stopped), exited);
 
-    for (e = merged->head; e != merged->tail; e = e->next) {
+    for (e = merged->head; e != NULL; e = e->next) {
         pcb *pcb = e->pcb;
         enum process_state state = pcb->state;
         if (state == RUNNING || state == READY) {
@@ -236,6 +238,8 @@ void s_ps(char *argv[]) {
     deconstruct_queue(stopped);
     deconstruct_queue(exited);
     deconstruct_queue(merged);
+
+    sigprocmask(SIG_UNBLOCK, &mask, NULL);
     
 }
 

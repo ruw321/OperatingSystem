@@ -268,3 +268,98 @@ int printQueue(pcb_queue *queue) {
     return 0;
     printf("######### Finish Print Queue ##########\n");
 }
+
+int compare_pids(const void* a, const void* b) {
+    pcb* pcb_a = *(pcb**)a;
+    pcb* pcb_b = *(pcb**)b;
+    if (pcb_a->pid < pcb_b->pid) {
+        return -1;
+    } else if (pcb_a->pid > pcb_b->pid) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+pcb_queue* sortQueue(pcb_queue* queue) {
+    pcb_queue* sorted_queue = (pcb_queue*)malloc(sizeof(pcb_queue));
+    sorted_queue->head = NULL;
+    sorted_queue->tail = NULL;
+    
+    // Copy the PCBs from the original queue into an array
+    int num_pcbs = 0;
+    pcb_node* node;
+    for (node = queue->head; node != NULL; node = node->next) {
+        num_pcbs++;
+    }
+    pcb** pcb_array = (pcb**)malloc(num_pcbs * sizeof(pcb*));
+    int i = 0;
+    for (node = queue->head; node != NULL; node = node->next) {
+        pcb_array[i++] = node->pcb;
+    }
+    
+    // Sort the array of PCBs based on pid
+    qsort(pcb_array, num_pcbs, sizeof(pcb*), compare_pids);
+    
+    // Create a new queue and add the sorted PCBs to it
+    for (i = 0; i < num_pcbs; i++) {
+        pcb_node* new_node = (pcb_node*)malloc(sizeof(pcb_node));
+        new_node->pcb = pcb_array[i];
+        new_node->next = NULL;
+        if (sorted_queue->tail == NULL) {
+            sorted_queue->head = new_node;
+            sorted_queue->tail = new_node;
+        } else {
+            sorted_queue->tail->next = new_node;
+            sorted_queue->tail = new_node;
+        }
+    }
+    
+    // Free the temporary array of PCBs
+    free(pcb_array);
+    
+    return sorted_queue;
+}
+
+void add_pcb_to_queue(pcb_queue* queue, pcb* pcb) {
+    pcb_node* new_node = (pcb_node*)malloc(sizeof(pcb_node));
+    new_node->pcb = pcb;
+    new_node->next = NULL;
+    if (queue->tail == NULL) {
+        queue->head = new_node;
+        queue->tail = new_node;
+    } else {
+        queue->tail->next = new_node;
+        queue->tail = new_node;
+    }
+}
+
+
+pcb_queue* merge_two_queues(pcb_queue* queue1, pcb_queue* queue2) {
+    pcb_queue* merged_queue = (pcb_queue*)malloc(sizeof(pcb_queue));
+    merged_queue->head = NULL;
+    merged_queue->tail = NULL;
+    
+    // Merge the two sorted queues into a single sorted queue
+    pcb_node* node1 = queue1->head;
+    pcb_node* node2 = queue2->head;
+    while (node1 != NULL && node2 != NULL) {
+        if (node1->pcb->pid < node2->pcb->pid) {
+            add_pcb_to_queue(merged_queue, node1->pcb);
+            node1 = node1->next;
+        } else {
+            add_pcb_to_queue(merged_queue, node2->pcb);
+            node2 = node2->next;
+        }
+    }
+    while (node1 != NULL) {
+        add_pcb_to_queue(merged_queue, node1->pcb);
+        node1 = node1->next;
+    }
+    while (node2 != NULL) {
+        add_pcb_to_queue(merged_queue, node2->pcb);
+        node2 = node2->next;
+    }
+    
+    return merged_queue;
+}

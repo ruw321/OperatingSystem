@@ -153,7 +153,7 @@ int block_process(pid_t pid) {
     }
 
     pcb* cur_pcb = node->pcb;
-    cur_pcb->prev_state = cur_pcb->state;
+    cur_pcb->prev_state = BLOCKED;
     cur_pcb->state = BLOCKED;
 
     // remove from ready queue
@@ -187,12 +187,13 @@ int unblock_process(pid_t pid) {
 
         cur_pcb->prev_state = cur_pcb->state;
         cur_pcb->state = READY;
+        
         cur_pcb->ticks_to_reach = 0; // to indicate that parent no longer waits for its child
 
         printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
         enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
     }
-    log_event(cur_pcb, "UNBLOCKED");
+    log_event(cur_pcb, "UNBLOCKED2");
     return SUCCESS;
 }
 
@@ -212,13 +213,15 @@ int process_unblock(pid_t pid) {
 
         // printf("removing the node from stopped queue: %i\n", unblock_node->pcb->pid);
 
-        tempNode->pcb->prev_state = tempNode->pcb->state;
+        tempNode->pcb->prev_state = READY;
         tempNode->pcb->state = READY;
         tempNode->pcb->ticks_to_reach = 0; // to indicate that parent no longer waits for its child
 
         // printf("adding the node back to the ready queue: %i\n", tempNode->pcb->pid);
         enqueue_by_priority(ready_queue, tempNode->pcb->priority, tempNode);
+
+        log_event(unblock_node->pcb, "UNBLOCKED1");
     }
-    log_event(unblock_node->pcb, "UNBLOCKED");
+    
     return 0;
 }

@@ -64,12 +64,11 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     pcb_node* newNode1 = new_pcb_node(pcb);
     // default priority level is 0
     // printf("spawned. add to ready queue: %d\n", newNode->pcb->pid);
-    log_event(pcb, "EQ_READY_S");
+    log_event(pcb, "ADD_TO_READY");
     enqueue(ready_queue->mid, newNode1);
     // add to the children list for the parent
     pcb_node* newNode2 = new_pcb_node(pcb);
     enqueue(active_process->children, newNode2);
-
     log_event(pcb, "CREATE");
     return pcb->pid;
 }
@@ -87,7 +86,7 @@ void cleanup(pcb_queue* queue, pcb_node* child) {
 }
 
 pid_t wait_for_one(pid_t pid, int *wstatus) {
-
+    log_event(active_process, "WAIT_FOR_ONE");
     pcb* parent = active_process; // the calling thread
     
     pcb_node* child = get_node_by_pid_all_alive_queues(pid); // ready & stopped queue
@@ -100,6 +99,8 @@ pid_t wait_for_one(pid_t pid, int *wstatus) {
     pcb_node* zombie = get_node_by_pid(parent->zombies, pid);
     if (zombie != NULL) {
         dequeue_by_pid(parent->zombies, pid);
+        dequeue_by_pid(exited_queue, pid);
+        free(zombie->pcb);
     }
 
 
@@ -140,6 +141,8 @@ pid_t wait_for_anyone(int *wstatus) {
             *wstatus = zombie_node->pcb->state;
         }
         dequeue_by_pid(active_process->zombies, zombiePID);
+        dequeue_by_pid(exited_queue, zombiePID);
+        free(zombie_node->pcb);
         return zombiePID;
     }
 
@@ -161,13 +164,15 @@ pid_t wait_for_anyone(int *wstatus) {
 }
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
+    printf("waitpid is called withh pid: %d\n", pid);
+    printf("waitpid is called withh active process: %d\n", active_process->pid);
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGALRM);
-
     
     // if there is no children to wait for, return -1
     if (is_empty(active_process->children) && is_empty(active_process->zombies)) {
+        // printf("shouldnt be here\n");
         return -1;
     }
 
@@ -188,8 +193,8 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             // TODO: still dk how this will block the process
             // this is how children would know parent is waiting
             active_process->ticks_to_reach = -1; 
-            pcb_node *child = get_node_by_pid(active_process->children, pid);
-            child->pcb->toWait = true;
+            // pcb_node *child = get_node_by_pid(active_process->children, pid);
+            // child->pcb->toWait = true;
 
             block_process(active_process->pid);
             // switch context to scheduler 

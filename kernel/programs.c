@@ -199,21 +199,43 @@ void s_chmod(char *argv[]) {
 }
 
 void s_ps(char *argv[]) {
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+
     printf("PID PPID PRI STAT CMD\n");
-//     pcb_node * node;
-//     pcb* pcb = node->pcb;
-//     enum process_state state = pcb->state;
-//     if (state == RUNNING || state == READY) {
-//         printf("%3d %4d %3d  R   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->name);
-//     } else if (state == BLOCKED) {
-//         printf("%3d %4d %3d  B   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->name);
-//     } else if (state == STOPPED) {
-//         printf("%3d %4d %3d  S   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->name);
-//     } else if (state == TERMINATED || state == TERMINATED) {
-//         printf("%3d %4d %3d  Z   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->name);
-//     } else {
-//         printf("%3d %4d %3d  ?   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->name);
-//     }
+    pcb_node *e;
+
+    pcb_queue *low = sortQueue(ready_queue->low);
+    pcb_queue *mid = sortQueue(ready_queue->mid);
+    pcb_queue *high = sortQueue(ready_queue->high);
+    pcb_queue *stopped = sortQueue(stopped_queue);
+    pcb_queue *exited = sortQueue(exited_queue);
+
+    pcb_queue *merged = merge_two_queues(merge_two_queues(merge_two_queues(merge_two_queues(low, mid), high), stopped), exited);
+
+    for (e = merged->head; e != merged->tail; e = e->next) {
+        pcb *pcb = e->pcb;
+        enum process_state state = pcb->state;
+        if (state == RUNNING || state == READY) {
+            printf("%3d %4d %3d  R   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->pname);
+        } else if (state == BLOCKED) {
+            printf("%3d %4d %3d  B   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->pname);
+        } else if (state == STOPPED) {
+            printf("%3d %4d %3d  S   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->pname);
+        } else if (state == EXITED || state == TERMINATED) {
+            printf("%3d %4d %3d  Z   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->pname);
+        } else {
+            printf("%3d %4d %3d  ?   %s\n", pcb->pid, pcb->ppid, pcb->priority, pcb->pname);
+        }
+    }
+
+    deconstruct_queue(low);
+    deconstruct_queue(mid);
+    deconstruct_queue(high);
+    deconstruct_queue(stopped);
+    deconstruct_queue(exited);
+    deconstruct_queue(merged);
     
 }
 
@@ -259,7 +281,7 @@ void s_kill(char *argv[]) {
 }
 
 void zombie_child() {
-    
+    return;
 }
 
 void orphan_child() {
@@ -267,14 +289,16 @@ void orphan_child() {
 }
 
 void s_zombify(char *argv[]) {
-    p_spawn(zombie_child, NULL, F_STDIN_FD, F_STDOUT_FD);
+    char* args[2] = {"zombie_child", NULL};
+    p_spawn(zombie_child, args, F_STDIN_FD, F_STDOUT_FD);
     while (true);
-    
+    return;
 }
 
 void s_orphanify(char *argv[]) {
-    p_spawn(orphan_child, NULL, F_STDIN_FD, F_STDOUT_FD);
-    
+    char* args[2] = {"orphan_child", NULL};
+    p_spawn(orphan_child, args, F_STDIN_FD, F_STDOUT_FD);
+    return;    
 }
 
 void s_hang(char *argv[]) {

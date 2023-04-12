@@ -117,6 +117,8 @@ typedef struct JobList {
     int jobCount;
 } JobList;
 
+pcb_queue* sortQueue(pcb_queue* queue);
 
+pcb_queue* merge_two_queues(pcb_queue* queue1, pcb_queue* queue2);
 
 #endif

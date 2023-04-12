@@ -64,7 +64,7 @@ static void spawn(bool nohang)
       continue;
     }
 
-    dprintf(STDERR_FILENO, "cpid = %d pid = %d child_%d was reaped\n", cpid, pid, cpid - pid);
+    dprintf(STDERR_FILENO, "child_%d was reaped\n", cpid - pid);
   }
 }
 
@@ -84,6 +84,7 @@ static void spawn_r(void)
 
   if (i < 26) {
     argv[0][sizeof name - 2] = 'A' + i++;
+    printf("called pspawn\n");
     pid = p_spawn(spawn_r, argv, F_STDIN_FD, F_STDOUT_FD);
     dprintf(STDERR_FILENO, "%s was spawned\n", *argv);
     usleep(10000);  // 10 milliseconds

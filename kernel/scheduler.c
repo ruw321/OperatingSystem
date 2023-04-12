@@ -88,7 +88,7 @@ void scheduler() {
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGALRM);
-    // sigprocmask(SIG_BLOCK, &mask, NULL);
+    sigprocmask(SIG_BLOCK, &mask, NULL);
 
     //printf("before active process pid: %i\n", active_process->pid);
     // printf("scheduler is running\n");
@@ -100,15 +100,24 @@ void scheduler() {
         // printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
         log_event(active_process, "DQ_READY_S");
+        if (is_priority_queue_empty(ready_queue)) {
+            printf("Ready queue is not supposed to be empty\n");
+        }
+        if (is_empty(get_pcb_queue_by_priority(ready_queue, active_process->priority))) {
+            printf("Ready queue's queue is not supposed to be empty\n");
+        }
         pcb_node *currNode = dequeue_front_by_priority(ready_queue, active_process->priority);
+        log_event(active_process, "DQ_READY_DONE");
         if (active_process->pid != currNode->pcb->pid) {
             printf("Error: active process is not the head of the ready queue\n");
         }
+        log_event(active_process, "DQ_READY_DONE2");
         // setting the previous state
         active_process->prev_state = active_process->state;
 
         // check how the previous process ended
         if (stopped_by_timer) {
+            log_event(active_process, "TIMERSTOP");
             // printf("add back to the queue active process state = %d pid = %d\n", active_process->state, active_process->pid);
             
             // printf("process is stopped by the timer\n");
@@ -126,48 +135,47 @@ void scheduler() {
             // since only process that is unblocked can come in here
 
             // printQueue(ready_queue->mid);
+            log_event(active_process, "NOT_RUNNING");
 
             if (active_process->state == RUNNING) {
-                if (haveChildrenToWait(active_process) == 0) {
                     
-                    // currNode->pcb->state = ZOMBIED;
-                    // process completed, add it to the exit queue
-                    log_event(currNode->pcb, "EQ_EXIT");
-                    enqueue(exited_queue, currNode);
-
-
-                    active_process->prev_state = active_process->state;
-                    active_process->state = EXITED;
-
+                // currNode->pcb->state = ZOMBIED;
+                // process completed, add it to the exit queue
                 
-                    //printf("process is finished (not stopped by the timer)\n");
-            
-                    pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
-                    if (parent != NULL) {
-                        // remove the node from children queue and add it to the zombies queue
-                        pcb_node *newZombie = dequeue_by_pid(parent->pcb->children, active_process->pid);
-                        newZombie->pcb->toWait = false;
-                        // printf("move node to zombies\n");
-                        enqueue(parent->pcb->zombies, newZombie);
+                log_event(currNode->pcb, "EQ_EXIT");
+                enqueue(exited_queue, currNode);
 
-                        // if the parent is blocked waiting for it, unblock the parent
-                        // printf("unblocking the parent: %i\n", parent->pcb->pid);
-                        if (parent->pcb->ticks_to_reach == -1 && haveChildrenToWait(parent->pcb) == 0) {
-                            pcb_node* parent = get_node_by_pid(stopped_queue, active_process->ppid);
-                            parent->pcb->ticks_to_reach = 0;
-                            process_unblock(active_process->ppid);
-                        }
+                active_process->prev_state = active_process->state;
+                active_process->state = EXITED;
 
-                    } else {
-                        printf("Active process's pid %d ppid %d\n", active_process->pid, active_process->ppid);
-                        printf("Parent node is not supposed to be null\n");
+                //printf("process is finished (not stopped by the timer)\n");
+                log_event(active_process, "GET_PARENT");
+                pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
+                if (parent != NULL) {
+                    log_event(active_process, "MOVE_TO_Z");
+                    // remove the node from children queue and add it to the zombies queue
+                    pcb_node *newZombie = dequeue_by_pid(parent->pcb->children, active_process->pid);
+                    newZombie->pcb->toWait = false;
+                    // printf("move node to zombies\n");
+                    enqueue(parent->pcb->zombies, newZombie);
+
+                    // if the parent is blocked waiting for it, unblock the parent
+                    // printf("unblocking the parent: %i\n", parent->pcb->pid);
+                    if (parent->pcb->ticks_to_reach == -1) {
+                        pcb_node* parent = get_node_by_pid(stopped_queue, active_process->ppid);
+                        parent->pcb->ticks_to_reach = 0;
+                        process_unblock(active_process->ppid);
                     }
+
                 } else {
-                    enqueue_by_priority(ready_queue, active_process->priority, currNode);
+                    printf("Active process's pid %d ppid %d\n", active_process->pid, active_process->ppid);
+                    printf("Parent node is not supposed to be null\n");
                 }
+                
                 // TODO: orphan clean ups
                 // k_process_cleaup_orphan(active_process);
             } else {
+                log_event(active_process, "DONTBEHERE");
                 printf("Should not enter here\n");
             }
         }
@@ -179,10 +187,8 @@ void scheduler() {
     active_process->state = RUNNING;
     stopped_by_timer = false;
 
-    // sigprocmask(SIG_UNBLOCK, &mask, NULL);
-
     // printf("next selected process %s with pid: %i\n", active_process->pname, active_process->pid);
-    
+    sigprocmask(SIG_UNBLOCK, &mask, NULL);
     if (active_process == idle_process) {
         sleep(10);
         setcontext(&scheduler_context); 

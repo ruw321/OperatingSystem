@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "global.h"
 #include "job.h"
+#include "log.h"
 // Works as a wrapper to the kernel functions so that users can use these functions
 
 extern priority_queue* ready_queue;

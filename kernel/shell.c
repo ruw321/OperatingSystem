@@ -123,7 +123,8 @@ int shell_init(int argc, const char **argv) {
     if (scheduler_init() == FAILURE ) {
         return FAILURE;
     }
-
+    // initialize logger
+    log_init();
     // initialize file system
     // if (fs_mount(argv[1]) == -1) {
     //     return FAILURE;

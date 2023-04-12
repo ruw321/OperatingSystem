@@ -23,7 +23,7 @@ extern pcb_queue* exited_queue;
 extern pcb_queue* stopped_queue;
 extern int tick_tracker;
 
-#define TICK 100000     // 1 tick = 0.1s
+#define TICK 900000     // 1 tick = 0.1s
 
 int set_alarm_handler();    // register signal handler for SIGALARM
 void alarm_handler();       // The signal handler for SIGALARM
@@ -40,7 +40,5 @@ void idle_func();   // The funciton for the idle process
 int scheduler_init();   // initialize the scheduler
 
 int idle_process_init();    // initialize the idle process
-
-int haveChildrenToWait(pcb *process);
 
 #endif

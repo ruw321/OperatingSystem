@@ -280,17 +280,29 @@ void s_kill(char *argv[]) {
         } else if (strcmp(argv[1], "stop") == 0) {
             signal = S_SIGSTOP;
             for (int i = 2; i < count; i++) {
-                if (p_kill(atoi(argv[i]), signal) == -1) {
+                pid_t pid = atoi(argv[i]);
+                if (p_kill(pid, signal) == -1) {
                     printf("kill: invalid process id '%s'\n", argv[i]);
                 }
             }
+            
+            
+
         } else if (strcmp(argv[1], "cont") == 0) {
             signal = S_SIGCONT;
             for (int i = 2; i < count; i++) {
-                if (p_kill(atoi(argv[i]), signal) == -1) {
+                pid_t pid = atoi(argv[i]);
+                if (p_kill(pid, signal) == -1) {
                     printf("kill: invalid process id '%s'\n", argv[i]);
                 }
+                
+                pcb_node *node = get_node_by_pid(stopped_queue, pid);
+                if (node != NULL && strcmp(node->pcb->pname, "sleep") == 0) {
+                    Job *job = updateJobList(&_jobList, pid, JOB_RUNNING);
+                    writeJobState(job);
+                }
             }
+
         } else {
             for (int i = 1; i < count; i++) {
                 if (p_kill(atoi(argv[i]), signal) == -1) {

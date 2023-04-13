@@ -71,6 +71,8 @@ bool isBuildinCommand(struct parsed_command *cmd) {
         return true;
     } else if (strcmp(*cmd->commands[0], "man") == 0) {
         return true;
+    } else if (strcmp(*cmd->commands[0], "kill") == 0) {
+        return true;
     } else if (strcmp(*cmd->commands[0], "logout") == 0) {
         return true;
     } else {
@@ -100,8 +102,6 @@ bool isKnownProgram(struct parsed_command *cmd) {
     } else if (strcmp(*cmd->commands[0], "chmod") == 0) {
         return true;
     } else if (strcmp(*cmd->commands[0], "ps") == 0) {
-        return true;
-    } else if (strcmp(*cmd->commands[0], "kill") == 0) {
         return true;
     } else if (strcmp(*cmd->commands[0], "zombify") == 0) {
         return true;

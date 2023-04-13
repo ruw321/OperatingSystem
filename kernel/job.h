@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "unistd.h"
 #include "../PennFAT/interface.h"
+#include "programs.h"
 
 extern JobList _jobList; // store all background job
 extern pid_t fgPid; // running foreground process
@@ -43,10 +44,10 @@ void pollBackgroundProcesses();
 Job *findTheCurrentJob(JobList *jobList);
 void bgBuildinCommand(struct parsed_command *cmd);
 void fgBuildinCommand(struct parsed_command *cmd);
-void jobsBuiltinCommand();
-// void niceBuildinCommand(struct parsed_command *cmd);
+void jobsBuildinCommand();
 void nicePidBuildinCommand(struct parsed_command *cmd);
+void killBuildinCommand(struct parsed_command *cmd);
 void manBuildinCommand();
-// void logoutBuiltinCommand();
+
 
 #endif

@@ -131,9 +131,16 @@ CommandType parseBuiltinCommandType(struct parsed_command *cmd) {
     else if (strcmp(*cmd->commands[0], "logout") == 0) {
         return LOGOUT;
     }
+    else if (strcmp(*cmd->commands[0], "kill") == 0) {
+        return KILL;
+    }
     else {
         return OTHERS;
     }
+}
+
+void killBuildinCommand(struct parsed_command *cmd) {
+    s_kill(cmd->commands[0]);
 }
 
 /* Execute built-in command wrapped up */
@@ -157,10 +164,13 @@ CommandType executeBuiltinCommand(struct parsed_command *cmd) {
             fgBuildinCommand(cmd);
             return FG;
         case JOBS:
-            jobsBuiltinCommand();
+            jobsBuildinCommand();
             return JOBS;
+        case KILL:
+            killBuildinCommand(cmd);
+            return KILL;
         case LOGOUT:
-            // logoutBuiltinCommand();
+            /* move the logic to outside */
             return LOGOUT;
         default:
             printf("ERROR: OTHER COMMAND\n");
@@ -171,7 +181,7 @@ CommandType executeBuiltinCommand(struct parsed_command *cmd) {
 }
 
 
-void jobsBuiltinCommand() {
+void jobsBuildinCommand() {
     printJobList(&_jobList);
 }
 
@@ -513,3 +523,4 @@ Job *findTheCurrentJob(JobList *jobList) {
 
     return curJob;
 }
+

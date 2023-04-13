@@ -141,7 +141,9 @@ int executeLine(struct parsed_command *cmd, int priority) {
     }
 
     // TODO: bug in p_nice example nice 1 sleep 1
-    if (priority != MID) p_nice(pid, priority);
+    if (priority != MID) {
+        p_nice(pid, priority);
+    }
     
     if (!cmd->is_background) {
         int wstatus;

@@ -301,12 +301,13 @@ int p_nice(pid_t pid, int priority) {
         }
         target_node->pcb->priority = priority;
     } else {
-        pcb* target_pcb = target_node->pcb;
         // if it is, change the queue if necessary
-        if (target_pcb->priority != priority) {
+        if (target_node->pcb->priority != priority) {
             // change the queue
-            pcb_queue* orginal_queue = get_pcb_queue_by_priority(ready_queue, target_pcb->priority);
-            enqueue_by_priority(ready_queue, priority, dequeue_by_pid(orginal_queue, pid));
+            pcb_queue* orginal_queue = get_pcb_queue_by_priority(ready_queue, target_node->pcb->priority);
+            dequeue_by_pid(orginal_queue, pid);
+            target_node->pcb->priority = priority;
+            enqueue_by_priority(ready_queue, priority, target_node);
         } 
     }
 

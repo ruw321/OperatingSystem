@@ -64,7 +64,7 @@ static void spawn(bool nohang)
       continue;
     }
 
-    dprintf(STDERR_FILENO, "cpid = %d pid = %d child_%d was reaped\n", cpid, pid, cpid - pid);
+    dprintf(STDERR_FILENO, "child_%d was reaped\n", cpid - pid);
   }
 }
 

@@ -1,7 +1,7 @@
 #include "user.h"
 
 bool W_WIFEXITED(int status) {
-    return status == TERMINATED;
+    return status == EXITED;
 }
 
 bool W_WIFSTOPPED(int status) {
@@ -68,7 +68,6 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     // add to the children list for the parent
     pcb_node* newNode2 = new_pcb_node(pcb);
     enqueue(active_process->children, newNode2);
-
     log_event(pcb, "CREATE");
     return pcb->pid;
 }
@@ -86,7 +85,6 @@ void cleanup(pcb_queue* queue, pcb_node* child) {
 }
 
 pid_t wait_for_one(pid_t pid, int *wstatus) {
-
     pcb* parent = active_process; // the calling thread
     
     pcb_node* child = get_node_by_pid_all_alive_queues(pid); // ready & stopped queue
@@ -99,6 +97,8 @@ pid_t wait_for_one(pid_t pid, int *wstatus) {
     pcb_node* zombie = get_node_by_pid(parent->zombies, pid);
     if (zombie != NULL) {
         dequeue_by_pid(parent->zombies, pid);
+        dequeue_by_pid(exited_queue, pid);
+        free(zombie->pcb);
     }
 
 
@@ -113,7 +113,7 @@ pid_t wait_for_one(pid_t pid, int *wstatus) {
         return -1;
     }
 
-    if (child->pcb->prev_state != child->pcb->state) {
+    if (child->pcb->prev_state != child->pcb->state && !(child->pcb->prev_state == RUNNING && child->pcb->state == READY)) {
         child->pcb->prev_state = child->pcb->state;
         
         if (wstatus != NULL) {
@@ -139,6 +139,8 @@ pid_t wait_for_anyone(int *wstatus) {
             *wstatus = zombie_node->pcb->state;
         }
         dequeue_by_pid(active_process->zombies, zombiePID);
+        dequeue_by_pid(exited_queue, zombiePID);
+        free(zombie_node->pcb);
         return zombiePID;
     }
 
@@ -146,7 +148,7 @@ pid_t wait_for_anyone(int *wstatus) {
     pcb_queue* children = active_process->children;
     if (!is_empty(children)) {
         for (pcb_node* child = children->head; child != NULL; child = child->next) {
-            if (child->pcb->prev_state != child->pcb->state) {
+            if (child->pcb->prev_state != child->pcb->state && !(child->pcb->prev_state == RUNNING && child->pcb->state == READY)) {
                 child->pcb->prev_state = child->pcb->state;
                 // set the status
                 if (wstatus != NULL) {
@@ -160,9 +162,20 @@ pid_t wait_for_anyone(int *wstatus) {
 }
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
+    // printf("waitpid is called withh pid: %d\n", pid);
+    // printf("waitpid is called withh active process: %d\n", active_process->pid);
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+    
     // if there is no children to wait for, return -1
     if (is_empty(active_process->children) && is_empty(active_process->zombies)) {
-        return -1;
+        // printf("shouldnt be here\n");
+        if (pid == -1) {
+            return 0;
+        } else {
+            return -1;
+        }
     }
 
     if (pid > 0) {  // a particule process
@@ -172,6 +185,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             return wait_for_one(pid, wstatus);
         } else {
             // if there are zombies, reap and return right away
+            // sigprocmask(SIG_BLOCK, &mask, NULL);
             pid_t result = wait_for_one(pid, wstatus);
             if (result != 0) {
                 return result;
@@ -180,11 +194,15 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             // block the calling thread
             // TODO: still dk how this will block the process
             // this is how children would know parent is waiting
-            active_process->ticks_to_reach = -1; 
-            block_process(active_process->pid);
+            active_process->ticks_left = -1; 
+            // pcb_node *child = get_node_by_pid(active_process->children, pid);
+            // child->pcb->toWait = true;
 
+            block_process(active_process->pid);
             // switch context to scheduler 
             stopped_by_timer = false;
+
+            // sigprocmask(SIG_UNBLOCK, &mask, NULL);
             swapcontext(&active_process->ucontext, &scheduler_context);
 
             // at this point, the parent process should be unblocked
@@ -203,23 +221,28 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             if (nohang) {
                 return wait_for_anyone(wstatus);
             } else {
-
+                sigprocmask(SIG_BLOCK, &mask, NULL);
+                log_event(active_process, "WAIT_1");
                 pid_t result = wait_for_anyone(wstatus);
+                // printf("wait for anyone result 1: %d\n", result);
                 if (result != 0) {
                     return result;
                 }
 
                 // block parent, remove it from the ready queue and switch context
-                active_process->ticks_to_reach = -1; 
+                active_process->ticks_left = -1; 
 
                 block_process(active_process->pid);
+                sigprocmask(SIG_UNBLOCK, &mask, NULL);
 
                 // switch context to scheduler 
                 stopped_by_timer = false;
 
                 swapcontext(&active_process->ucontext, &scheduler_context);
 
+                log_event(active_process, "WAIT_2");
                 result = wait_for_anyone(wstatus);
+                // printf("wait for anyone result 2: %d\n", result);
 
                 if (result == 0) {
                     printf("cannot 0, should return pid instead because nohang is false\n");
@@ -278,12 +301,13 @@ int p_nice(pid_t pid, int priority) {
         }
         target_node->pcb->priority = priority;
     } else {
-        pcb* target_pcb = target_node->pcb;
         // if it is, change the queue if necessary
-        if (target_pcb->priority != priority) {
+        if (target_node->pcb->priority != priority) {
             // change the queue
-            pcb_queue* orginal_queue = get_pcb_queue_by_priority(ready_queue, target_pcb->priority);
-            enqueue_by_priority(ready_queue, priority, dequeue_by_pid(orginal_queue, pid));
+            pcb_queue* orginal_queue = get_pcb_queue_by_priority(ready_queue, target_node->pcb->priority);
+            dequeue_by_pid(orginal_queue, pid);
+            target_node->pcb->priority = priority;
+            enqueue_by_priority(ready_queue, priority, target_node);
         } 
     }
 
@@ -298,10 +322,39 @@ void p_sleep(unsigned int seconds) {
     // sets the calling process to blocked until ticks of the system clock elapse
     // and then sets the thread to running 
 
-    active_process->ticks_to_reach = tick_tracker + seconds;
-    printf("ticks to reach is %d\n", active_process->ticks_to_reach);
+    active_process->ticks_left = seconds;
+    // printf("ticks to reach is %d\n", active_process->ticks_left);
 
     block_process(active_process->pid);
     p_active_context = NULL;
     swapcontext(&active_process->ucontext, &scheduler_context);
+}
+
+void signal_handler(int signal) {
+    // if shell, PROMPT again
+    if (fgPid == 1) {
+        if (signal == SIGINT || signal == SIGTSTP) {
+            writePrompt();
+        }
+    } else {
+        if (signal == SIGINT) {
+            p_kill(fgPid, S_SIGTERM);
+        } else if (signal == SIGTSTP) {
+            p_kill(fgPid, S_SIGSTOP);
+        }
+    }
+}
+
+int register_signals() {
+    if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        perror("Failed to register handler for SIGINT.\n");
+        return FAILURE;
+    }
+
+    if (signal(SIGTSTP, signal_handler) == SIG_ERR) {
+        perror("Failed to register handler for SIGSTOP.\n");
+        return FAILURE;
+    }
+
+    return SUCCESS;
 }

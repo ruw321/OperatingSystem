@@ -7,9 +7,8 @@
 #include "unistd.h"
 #include "../PennFAT/interface.h"
 
-
 extern JobList _jobList; // store all background job
-extern pid_t fgPid;
+extern pid_t fgPid; // running foreground process
 
 /* Utility functions for writing job state */
 void printCommandLine(struct parsed_command *cmd);
@@ -35,7 +34,7 @@ void printJobList(JobList *jobList);
 
 /* Built-in commands */
 CommandType parseBuiltinCommandType(struct parsed_command *cmd);
-int executeBuiltinCommand(struct parsed_command *cmd);
+CommandType executeBuiltinCommand(struct parsed_command *cmd);
 
 
 void clearJobList(JobList *jobList);
@@ -45,11 +44,9 @@ Job *findTheCurrentJob(JobList *jobList);
 void bgBuildinCommand(struct parsed_command *cmd);
 void fgBuildinCommand(struct parsed_command *cmd);
 void jobsBuiltinCommand();
-
-
-void niceBuildinCommand(struct parsed_command *cmd);
+// void niceBuildinCommand(struct parsed_command *cmd);
 void nicePidBuildinCommand(struct parsed_command *cmd);
 void manBuildinCommand();
-void logoutBuiltinCommand();
+// void logoutBuiltinCommand();
 
 #endif

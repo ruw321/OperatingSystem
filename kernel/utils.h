@@ -23,11 +23,12 @@ typedef struct pcb {
     int input_fd;
     int output_fd;
     FdNode *fds[MAX_FILE_DESCRIPTOR];   // keep track of open FDs
-    int ticks_to_reach;     // > 1 represents the wait times, -1 means parent is waiting
+    int ticks_left;     // > 1 represents the wait times, -1 means parent is waiting
     struct pcb_queue* children;     // processes that have not completed yet
     struct pcb_queue* zombies;      // processes that are completed but the parent has not waited for it yet
     char* pname;    // name of the function 
     // TODO: other fields to be added
+    bool toWait;
 } pcb;
 
 typedef struct pcb_node {
@@ -76,6 +77,7 @@ void set_stack(stack_t *stack);        // initialize stack for ucontext
 
 int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_context, char *argv[]); // initializing context
 
+int printQueue(pcb_queue *queue);
 
 typedef enum {
     JOB_RUNNING,
@@ -115,6 +117,14 @@ typedef struct JobList {
     int jobCount;
 } JobList;
 
+pcb_queue* sortQueue(pcb_queue* queue);
 
+pcb_queue* merge_two_queues(pcb_queue* queue1, pcb_queue* queue2);
+
+extern priority_queue* ready_queue;
+extern pcb_queue* exited_queue;
+extern pcb_queue* stopped_queue;
+
+extern pcb_node* get_node_by_pid_all_queues(pid_t pid);
 
 #endif

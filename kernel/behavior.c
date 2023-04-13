@@ -112,7 +112,7 @@ ProgramType parseProgramType(struct parsed_command *cmd) {
     }
 }
 
-int executeLine(struct parsed_command *cmd) {
+int executeLine(struct parsed_command *cmd, int priority) {
 
     int fd_in = F_STDIN_FD;
     int fd_out = F_STDOUT_FD;
@@ -133,18 +133,41 @@ int executeLine(struct parsed_command *cmd) {
             fd_out = f_open(cmd->stdout_file, F_WRITE);
         }
     }
-    ProgramType programType = parseProgramType(cmd);
+    ProgramType programType = parseProgramType(cmd);;
     pid_t pid = executeProgram(programType, *cmd->commands, fd_in, fd_out);
+    
+    if (!cmd->is_background) {
+        fgPid = pid;
+    }
+
+    // TODO: bug in p_nice example nice 1 sleep 1
+    if (priority != MID) {
+        p_nice(pid, priority);
+    }
     
     if (!cmd->is_background) {
         int wstatus;
         p_waitpid(pid, &wstatus, false);
+
+        fgPid = 1;
         if (cmd->stdin_file != NULL) {
             f_close(fd_in);
         }
         if (cmd->stdout_file != NULL) {
             f_close(fd_out);
         }
+
+        if (W_WIFEXITED(wstatus)) {
+            free(cmd);
+        } else if (W_WIFSIGNALED(wstatus)) {
+            free(cmd);
+        } else if (W_WIFSTOPPED(wstatus)) {
+            Job *newBackgroundJob = createJob(cmd, pid, JOB_STOPPED);
+            appendJobList(&_jobList, newBackgroundJob);
+            writeNewline();
+            writeJobState(newBackgroundJob);
+        }
+        
     } else {
         if (programType == CAT) {
             // CAT will require Terminal Control of stdin, so it should be stopped
@@ -236,7 +259,8 @@ void executeScript(char *argv[]) {
     while (token != NULL) {
         int res = parseLine(token, &cmd);
         if (res == 0) {
-            executeLine(cmd);
+            // TODO: handle priority
+            executeLine(cmd, MID);
         }
         token = strtok(NULL, "\n");
     }

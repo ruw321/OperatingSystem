@@ -2,19 +2,17 @@
 #include "scheduler.h"
 
 JobList _jobList; // store all background job
-pid_t fgPid = -1;
+pid_t fgPid = 1;
 
 void shell_process() {
-    signal(SIGTTOU, SIG_IGN);
+
     char *line = NULL;
     LineType lineType;
     while (true) {
 
         writePrompt();
         lineType = readAndParseUserInput(&line);
-
-
-        // pollBackgroundProcesses();
+        pollBackgroundProcesses();
         
         if (lineType == S_EXIT_SHELL) {
             return;
@@ -26,13 +24,20 @@ void shell_process() {
             struct parsed_command *cmd;
             int res = parseLine(line, &cmd);
             if (res == 0) {
-                
                 if (isBuildinCommand(cmd)) {
-                    executeBuiltinCommand(cmd);
+                    CommandType cmdType = executeBuiltinCommand(cmd);
+                    if (cmdType == NICE) {
+                        int priority = atoi(cmd->commands[0][1]);
+                        cmd->commands[0] += 2;
+                        executeLine(cmd, priority);
+                    }
+                    if (cmdType == LOGOUT) {
+                        // TODO: logout
+                    }
                     free(cmd);
                 } else {
                     if (isKnownProgram(cmd)) {
-                        executeLine(cmd);
+                        executeLine(cmd, MID);
                     } else {
                         if (cmd->num_commands != 1) {
                             printf("Error: Unexcepted Input\n");
@@ -42,13 +47,15 @@ void shell_process() {
                             printf("Error: Cannot execute %s\n", cmd->commands[0][0]);
                             continue;
                         }
-                        executeLine(cmd);
+                        executeLine(cmd, MID);
                     }
                 }
             }
         }
         free(line);
-    } 
+    }
+
+    clearJobList(&_jobList);
 }
 
 
@@ -123,6 +130,12 @@ int shell_init(int argc, const char **argv) {
     if (scheduler_init() == FAILURE ) {
         return FAILURE;
     }
+
+    // initialize signal handlers
+    if (register_signals() == FAILURE ) {
+        return FAILURE;
+    }
+
     // initialize logger
     log_init();
     // initialize file system

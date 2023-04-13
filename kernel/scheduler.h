@@ -42,4 +42,6 @@ int scheduler_init();   // initialize the scheduler
 
 int idle_process_init();    // initialize the idle process
 
+int haveChildrenToWait(pcb *process);
+
 #endif

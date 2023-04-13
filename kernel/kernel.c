@@ -50,48 +50,67 @@ int k_process_kill(pcb *process, int signal) {
         return FAILURE;
     }
 
-    if (signal == SIGSTOP) {
+    if (signal == S_SIGSTOP) {
         process->prev_state = process->state;
         process->state = STOPPED;
 
+        // remove process from ready queue if existed
         pcb_queue* cur_queue = get_pcb_queue_by_priority(ready_queue, process->priority);
-        dequeue_by_pid(cur_queue, process->pid);
-        
+        pcb_node *node = dequeue_by_pid(cur_queue, process->pid);
+        if (node != NULL) {
+            enqueue(stopped_queue, node);
+        }
+
         // If this is a foreground process, unblock it's parent
-        if (is_foreground(process->pid)) {
-            unblock_process(process->ppid);
+        if (process->pid == fgPid) {
+            process_unblock(process->ppid);
+            // TODO: stopped by timer
             setcontext(&scheduler_context);
         }
 
-    } else if (signal == SIGCONT) {
-        // TODO: special case for sleep
-        // TODO: what should the prev_state be?
+    } else if (signal == S_SIGCONT) {
         if (process->state == STOPPED) {
-            process->state = READY;
-            pcb_node* new_node = new_pcb_node(process);
-            enqueue_by_priority(ready_queue, process->priority, new_node);
+            // TODO: why?
+            if (strcmp(process->pname, "sleep") == 0) {
+                process->prev_state = process->state;
+                process->state = BLOCKED;
+            } else {
+                process->prev_state = READY;
+                process->state = READY;
+                pcb_node* new_node = dequeue_by_pid(stopped_queue, process->pid);
+                if (new_node == NULL) {
+                    perror("new_node should not be NULL.\n");
+
+                } else {
+                    enqueue_by_priority(ready_queue, process->priority, new_node);
+                }
+            }       
         }
-    } else if (signal == SIGTERM) {
+    } else if (signal == S_SIGTERM) {
         process->prev_state = process->state;
         process->state = TERMINATED;
 
+        // remove process from ready queue if existed
         pcb_queue* cur_queue = get_pcb_queue_by_priority(ready_queue, process->priority);
         dequeue_by_pid(cur_queue, process->pid);
 
         //remove from its parent's children and add it to zombies
-        pcb_node* parent_node = get_node_by_pid_from_priority_queue(ready_queue, process->ppid);
+        pcb_node* parent_node = get_node_by_pid_all_queues(process->ppid);
         if (parent_node == NULL) {
             perror("Parent node should not be NULL.\n");
             return FAILURE;
         }
+        // printf("parent is %d\n", parent_node->pcb->pid);
         pcb* parent_pcb = parent_node->pcb;
-        dequeue_by_pid(parent_pcb->children, process->pid);
-        pcb_node* p_node = new_pcb_node(process);
-        enqueue(parent_pcb->zombies, p_node);
+        pcb_node* p_node = dequeue_by_pid(parent_pcb->children, process->pid);
+        enqueue(exited_queue, p_node);
+        pcb_node* p_node2 = new_pcb_node(p_node->pcb);
+        enqueue(parent_pcb->zombies, p_node2);
 
         // If this is a foreground process, unblock it's parent
-        if (is_foreground(process->pid)) {
-            unblock_process(process->ppid);
+        if (process->pid == fgPid) {
+            process_unblock(process->ppid);
+            // TODO: stopped by timer
             setcontext(&scheduler_context);
         }
     }
@@ -153,7 +172,7 @@ int block_process(pid_t pid) {
     }
 
     pcb* cur_pcb = node->pcb;
-    cur_pcb->prev_state = cur_pcb->state;
+    cur_pcb->prev_state = BLOCKED;
     cur_pcb->state = BLOCKED;
 
     // remove from ready queue
@@ -187,12 +206,12 @@ int unblock_process(pid_t pid) {
 
         cur_pcb->prev_state = cur_pcb->state;
         cur_pcb->state = READY;
-        cur_pcb->ticks_to_reach = 0; // to indicate that parent no longer waits for its child
+        
+        cur_pcb->ticks_left = 0; // to indicate that parent no longer waits for its child
 
         printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
         enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
     }
-    log_event(cur_pcb, "UNBLOCKED");
     return SUCCESS;
 }
 
@@ -212,13 +231,15 @@ int process_unblock(pid_t pid) {
 
         // printf("removing the node from stopped queue: %i\n", unblock_node->pcb->pid);
 
-        tempNode->pcb->prev_state = tempNode->pcb->state;
+        tempNode->pcb->prev_state = READY;
         tempNode->pcb->state = READY;
-        tempNode->pcb->ticks_to_reach = 0; // to indicate that parent no longer waits for its child
+        tempNode->pcb->ticks_left = 0; // to indicate that parent no longer waits for its child
 
         // printf("adding the node back to the ready queue: %i\n", tempNode->pcb->pid);
         enqueue_by_priority(ready_queue, tempNode->pcb->priority, tempNode);
+
+        log_event(unblock_node->pcb, "UNBLOCKED");
     }
-    log_event(unblock_node->pcb, "UNBLOCKED");
+    
     return 0;
 }

@@ -44,3 +44,5 @@ bool is_foreground(pid_t pid);
 
 // unblock a process
 int process_unblock(pid_t pid);
+
+int clean_orphan(pcb * process);

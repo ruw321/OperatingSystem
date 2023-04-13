@@ -44,4 +44,6 @@ int idle_process_init();    // initialize the idle process
 
 int haveChildrenToWait(pcb *process);
 
+void deconstruct_idle();
+
 #endif

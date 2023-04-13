@@ -10,11 +10,13 @@ extern pcb* active_process;
 extern ucontext_t scheduler_context;
 extern int tick_tracker;
 extern ucontext_t* p_active_context;
+extern ucontext_t main_context;
 
 extern JobList _jobList;
 extern pid_t fgPid;
 
 extern void writePrompt();
+extern void deconstruct_idle();
 
 bool W_WIFEXITED(int status);
 bool W_WIFSTOPPED(int status);
@@ -42,10 +44,12 @@ pcb_node* get_node_by_pid_all_alive_queues(pid_t pid);     // Find the element w
 int p_kill(pid_t pid, int sig);
 
 // exits the current thread unconditionally
-void p_exit(void);
+int p_exit(void);
 
 // sets the priority of the thread pid to priority
 int p_nice(pid_t pid, int priority);
 
 // sets the calling process to blocked until ticks of the system clock elapse, and then sets the thread to running.
 void p_sleep(unsigned int ticks);
+
+void deconstruct_shell();

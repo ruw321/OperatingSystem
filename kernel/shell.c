@@ -33,6 +33,7 @@ void shell_process() {
                     }
                     if (cmdType == LOGOUT) {
                         // TODO: logout
+                        
                     }
                     free(cmd);
                 } else {

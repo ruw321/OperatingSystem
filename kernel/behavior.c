@@ -264,5 +264,4 @@ void executeScript(char *argv[]) {
         }
         token = strtok(NULL, "\n");
     }
-    free(cmd);
 }

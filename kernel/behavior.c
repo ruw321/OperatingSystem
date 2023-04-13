@@ -93,8 +93,6 @@ ProgramType parseProgramType(struct parsed_command *cmd) {
         return CHMOD;
     } else if (strcmp(*cmd->commands[0], "ps") == 0) {
         return PS;
-    } else if (strcmp(*cmd->commands[0], "kill") == 0) {
-        return KILL;
     } else if (strcmp(*cmd->commands[0], "zombify") == 0) {
         return ZOMBIFY;
     } else if (strcmp(*cmd->commands[0], "orphanify") == 0) {
@@ -217,9 +215,6 @@ pid_t executeProgram(ProgramType programType, char **argv, int fd_in, int fd_out
             break;
         case PS:
             pid = p_spawn(s_ps, argv, fd_in, fd_out);
-            break;
-        case KILL:
-            pid = p_spawn(s_kill, argv, fd_in, fd_out);
             break;
         case ZOMBIFY:
             pid = p_spawn(s_zombify, argv, fd_in, fd_out);

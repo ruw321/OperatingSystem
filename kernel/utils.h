@@ -95,6 +95,7 @@ typedef enum {
     FG, // Syntax: fg [job_id]
     JOBS, // Syntax: jobs
     LOGOUT, // Syntax: logout
+    KILL,
     OTHERS // non-builtin command
 } CommandType;
 

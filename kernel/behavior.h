@@ -26,7 +26,6 @@ typedef enum {
     RM,
     CHMOD,
     PS,
-    KILL,
     ZOMBIFY,
     ORPHANIFY,
     HANG,

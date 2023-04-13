@@ -45,8 +45,14 @@ void kernel_deconstruct() {
 }
 
 int k_process_kill(pcb *process, int signal) {
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+    sigprocmask(SIG_BLOCK, &mask, NULL);
+
     if (process->pid == 1) {
         perror("Should not kill shell\n");
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);
         return FAILURE;
     }
 
@@ -105,6 +111,7 @@ int k_process_kill(pcb *process, int signal) {
         pcb_node* parent_node = get_node_by_pid_all_queues(process->ppid);
         if (parent_node == NULL) {
             perror("Parent node should not be NULL.\n");
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);
             return FAILURE;
         }
         // printf("parent is %d\n", parent_node->pcb->pid);
@@ -113,10 +120,7 @@ int k_process_kill(pcb *process, int signal) {
 
         enqueue(parent_pcb->zombies, p_node);
 
-        if (clean_orphan(process) == FAILURE) {
-            perror("Failed to cleanup zombies.\n");
-            return FAILURE;
-        }
+        clean_orphan(process);
 
         // If this is a foreground process, unblock it's parent
         if (process->pid == fgPid) {
@@ -125,6 +129,7 @@ int k_process_kill(pcb *process, int signal) {
             setcontext(&scheduler_context);
         }
     }
+    sigprocmask(SIG_UNBLOCK, &mask, NULL);
     return SUCCESS;
 }
 

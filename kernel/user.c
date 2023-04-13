@@ -158,7 +158,7 @@ pid_t wait_for_anyone(int *wstatus) {
             }
         }
     }
-    return -1;
+    return 0;
 }
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
@@ -223,7 +223,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 log_event(active_process, "WAIT_1");
                 pid_t result = wait_for_anyone(wstatus);
                 // printf("wait for anyone result 1: %d\n", result);
-                if (result != -1) {
+                if (result != 0) {
                     return result;
                 }
 

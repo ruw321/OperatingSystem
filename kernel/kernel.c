@@ -115,9 +115,10 @@ int k_process_kill(pcb *process, int signal) {
             return FAILURE;
         }
         // printf("parent is %d\n", parent_node->pcb->pid);
+        log_event(process, "ZOMBIE");
         pcb* parent_pcb = parent_node->pcb;
         pcb_node* p_node = dequeue_by_pid(parent_pcb->children, process->pid);
-
+        
         enqueue(parent_pcb->zombies, p_node);
 
         clean_orphan(process);

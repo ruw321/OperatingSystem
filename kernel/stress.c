@@ -24,6 +24,7 @@
 
 static void nap(void)
 {
+  log_event(active_process, "NAP");
   usleep(10000);  // 10 milliseconds
 }
 

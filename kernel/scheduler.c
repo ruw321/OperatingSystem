@@ -31,7 +31,7 @@ void alarm_handler(int signum)
         if (strcmp(tmp->pcb->pname, "sleep") == 0) {
             if (tmp->pcb->state != STOPPED) {
                 if (tmp->pcb->ticks_left > 0) {
-                    tmp->pcb->ticks_left --;
+                    tmp->pcb->ticks_left--;
                 } else{
                     tmp->pcb->state = RUNNING;
                     // add to ready queue
@@ -42,8 +42,11 @@ void alarm_handler(int signum)
             
         }
     }
-
+    log_event(active_process, "Time Tick");
     swapcontext(&active_process->ucontext, &scheduler_context);
+
+    // pcb_t* old_process = active_process;
+    // swapcontext(&old_process->ucontext, &scheduler_context);
 }
 
 
@@ -95,6 +98,7 @@ void scheduler() {
     sigemptyset(&mask);
     sigaddset(&mask, SIGALRM);
     sigprocmask(SIG_BLOCK, &mask, NULL);
+    set_timer();
 
     //printf("before active process pid: %i\n", active_process->pid);
     // printf("scheduler is running\n");
@@ -114,7 +118,7 @@ void scheduler() {
             }
 
             // check how the previous process ended
-            if (stopped_by_timer) {
+            if (stopped_by_timer || active_process->pid == 1) {
                 // printf("add back to the queue active process state = %d pid = %d\n", active_process->state, active_process->pid);
                 
                 // printf("process is stopped by the timer\n");
@@ -184,18 +188,17 @@ void scheduler() {
     }
 
     active_process = next_process();
-    log_event(active_process, "SCHEDULE");
     p_active_context = &active_process->ucontext;
     active_process->state = RUNNING;
     stopped_by_timer = false;
 
-    // printf("next selected process %s with pid: %i\n", active_process->pname, active_process->pid);
+    log_event(active_process, "SCHEDULE");
     sigprocmask(SIG_UNBLOCK, &mask, NULL);
     if (active_process == idle_process) {
-        p_active_context = &active_process->ucontext;
+        // p_active_context = &active_process->ucontext;
         setcontext(p_active_context);
     } else {
-        p_active_context = &active_process->ucontext;
+        // p_active_context = &active_process->ucontext;
         setcontext(p_active_context);
     }
 }

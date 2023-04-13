@@ -28,24 +28,24 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     }
     
     // redirection of file descriptors
-    if (fd0 != STDIN_FILENO) {
+    if (fd0 != F_STDIN_FD) {
         FdNode *dst_node = pcb->fds[fd0];
         if (dst_node == NULL) {
             printf("[Error] Input file not opened\n");
             return FAILURE;
         }
         
-        pcb->fds[STDIN_FILENO] = dst_node;
+        pcb->fds[F_STDIN_FD] = dst_node;
     }
     
-    if (fd1 != STDOUT_FILENO) {
+    if (fd1 != F_STDOUT_FD) {
         FdNode *dst_node = pcb->fds[fd1];
         if (dst_node == NULL) {
             printf("[Error] Output file not opened\n");
             return FAILURE;
         }
         
-        pcb->fds[STDOUT_FILENO] = dst_node;
+        pcb->fds[F_STDOUT_FD] = dst_node;
     }
 
     // we might not need this:
@@ -158,7 +158,7 @@ pid_t wait_for_anyone(int *wstatus) {
             }
         }
     }
-    return -1;
+    return 0;
 }
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
@@ -223,7 +223,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 log_event(active_process, "WAIT_1");
                 pid_t result = wait_for_anyone(wstatus);
                 // printf("wait for anyone result 1: %d\n", result);
-                if (result != -1) {
+                if (result != 0) {
                     return result;
                 }
 

@@ -487,7 +487,7 @@ void pollBackgroundProcesses() {
     int wstatus;
     pid_t pid;
     pid = p_waitpid(-1, &wstatus, true);
-    while (pid != -1) {
+    while (pid > 0) {
         if (W_WIFEXITED(wstatus)) {
             Job *job = updateJobList(&_jobList, pid, JOB_FINISHED);
             writeJobState(job);

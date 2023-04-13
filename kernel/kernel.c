@@ -77,7 +77,7 @@ int k_process_kill(pcb *process, int signal) {
     } else if (signal == S_SIGCONT) {
         if (process->state == STOPPED) {
             if (strcmp(process->pname, "sleep") == 0) {
-                process->prev_state = process->state;
+                process->prev_state = BLOCKED;
                 process->state = BLOCKED;
             } else {
                 process->prev_state = READY;

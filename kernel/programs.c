@@ -295,9 +295,9 @@ void s_kill(char *argv[]) {
                 if (p_kill(pid, signal) == -1) {
                     printf("kill: invalid process id '%s'\n", argv[i]);
                 }
-                
+
                 pcb_node *node = get_node_by_pid(stopped_queue, pid);
-                if (node != NULL && strcmp(node->pcb->pname, "sleep") == 0) {
+                if (node != NULL) {
                     Job *job = updateJobList(&_jobList, pid, JOB_RUNNING);
                     writeJobState(job);
                 }

@@ -171,7 +171,7 @@ int executeLine(struct parsed_command *cmd, int priority) {
     } else {
         if (programType == CAT) {
             // CAT will require Terminal Control of stdin, so it should be stopped
-            // p_kill(pid, S_SIGSTOP);
+            p_kill(pid, S_SIGSTOP);
         } 
         Job *newBackgroundJob = createJob(cmd, pid, JOB_RUNNING);
         appendJobList(&_jobList, newBackgroundJob);

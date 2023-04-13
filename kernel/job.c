@@ -210,16 +210,10 @@ void fgBuildinCommand(struct parsed_command *cmd) {
         printCommandLine(job->cmd);
         
         pid_t pid = job->pid;
-        // TODO: 
-        // tcsetpgrp(STDIN_FILENO, pid); // delegate the terminal control
         p_kill(pid, S_SIGCONT);
 
         int wstatus = 0;
         p_waitpid(pid, &wstatus, false);
-
-        // TODO:
-        // signal(SIGTTOU, SIG_IGN); // ignore the signal from UNIX when the main process come back from the background to get the terminal control
-        // tcsetpgrp(STDIN_FILENO, getpid()); // give back the terminal control to the main process
         
         if (W_WIFEXITED(wstatus)) {
             removeJobList(&_jobList, pid);

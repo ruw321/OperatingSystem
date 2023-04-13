@@ -185,15 +185,33 @@ void s_chmod(char *argv[]) {
     } else {
         char *permOperation = argv[1];
         char *fileName = argv[2];
-        if (f_find(fileName)) {
+
+        int file = findFileDirectory(fs_FATConfig, fs_FAT16InMemory, fileName);
+        DirectoryEntry dir;
+        readDirectoryEntry(fs_FATConfig, file, &dir);
+        uint8_t originPerm = dir.perm;
+        
+        if (file != FS_FAILURE) {
             if (strcmp(permOperation, "+x") == 0) {
-                fs_chmod(fileName, 7);
+                fs_chmod(fileName, originPerm | 0b001);
+            } else if (strcmp(permOperation, "-x") == 0) {
+                fs_chmod(fileName, originPerm & 0b110);
+            } else if (strcmp(permOperation, "+w") == 0) {
+                fs_chmod(fileName, originPerm | 0b010);
+            } else if (strcmp(permOperation, "-w") == 0) {
+                fs_chmod(fileName, originPerm & 0b101);
+            } else if (strcmp(permOperation, "+r") == 0) {
+                fs_chmod(fileName, originPerm | 0b100);
+            } else if (strcmp(permOperation, "-r") == 0) {
+                fs_chmod(fileName, originPerm & 0b011);
             } else {
-                /* TODO */
+                printf("Error: Invalid permission operation %s\n", permOperation);
             }
         } else {
             printf("Error: No such file %s\n", argv[2]);
         }
+
+        // TODO: free dir?
     }
     
 }

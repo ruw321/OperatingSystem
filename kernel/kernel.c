@@ -113,6 +113,11 @@ int k_process_kill(pcb *process, int signal) {
 
         enqueue(parent_pcb->zombies, p_node);
 
+        if (clean_orphan(process) == FAILURE) {
+            perror("Failed to cleanup zombies.\n");
+            return FAILURE;
+        }
+
         // If this is a foreground process, unblock it's parent
         if (process->pid == fgPid) {
             process_unblock(process->ppid);
@@ -248,5 +253,50 @@ int process_unblock(pid_t pid) {
         log_event(unblock_node->pcb, "UNBLOCKED");
     }
     
+    return 0;
+}
+
+int clean_orphan(pcb * process) {
+
+    pcb_node * cur_node = process->children->head;
+
+    while (cur_node != NULL) {
+        pcb_node* tmp = cur_node;
+        cur_node = tmp->next;
+
+        log_event(tmp->pcb, "ORPHAN");
+        // remove from children
+        dequeue_front(process->children);
+        
+        pcb_node* p_node = dequeue_by_pid(stopped_queue, tmp->pcb->pid);
+        if (p_node == NULL) {
+            pcb_queue *cur_queue = get_pcb_queue_by_priority(ready_queue, tmp->pcb->priority);
+            dequeue_by_pid(cur_queue, tmp->pcb->pid);
+        }
+
+
+        if (k_process_cleanup(tmp->pcb) == FAILURE) {
+            perror("Failed to cleanup children.\n");
+            return -1;
+        }
+    }
+
+    cur_node = process->zombies->head;
+    
+    while (cur_node != NULL) {
+        pcb_node* tmp = cur_node;
+        cur_node = tmp->next;
+
+        log_event(tmp->pcb, "ORPHAN");
+        // remove from children
+        dequeue_by_pid(stopped_queue, tmp->pcb->pid);
+        dequeue_front(process->zombies);
+
+        if (k_process_cleanup(tmp->pcb) == FAILURE) {
+            perror("Failed to cleanup children.\n");
+            return -1;
+        }
+    }
+
     return 0;
 }

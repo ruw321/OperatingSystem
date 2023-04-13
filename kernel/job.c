@@ -142,7 +142,7 @@ CommandType executeBuiltinCommand(struct parsed_command *cmd) {
 
     switch(cmdType) {
         case NICE:
-            // niceBuildinCommand(cmd);
+            /* move the logic to outside */
             return NICE;
         case NICE_PID:
             nicePidBuildinCommand(cmd);
@@ -477,7 +477,7 @@ void pollBackgroundProcesses() {
     int wstatus;
     pid_t pid;
     pid = p_waitpid(-1, &wstatus, true);
-    while (pid != 0) {
+    while (pid != -1) {
         if (W_WIFEXITED(wstatus)) {
             Job *job = updateJobList(&_jobList, pid, JOB_FINISHED);
             writeJobState(job);

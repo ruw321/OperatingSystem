@@ -158,7 +158,7 @@ pid_t wait_for_anyone(int *wstatus) {
             }
         }
     }
-    return 0;
+    return -1;
 }
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
@@ -171,11 +171,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     // if there is no children to wait for, return -1
     if (is_empty(active_process->children) && is_empty(active_process->zombies)) {
         // printf("shouldnt be here\n");
-        if (pid == -1) {
-            return 0;
-        } else {
-            return -1;
-        }
+        return -1;
     }
 
     if (pid > 0) {  // a particule process
@@ -186,6 +182,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
         } else {
             // if there are zombies, reap and return right away
             // sigprocmask(SIG_BLOCK, &mask, NULL);
+            log_event(active_process, "WAIT_1");
             pid_t result = wait_for_one(pid, wstatus);
             if (result != 0) {
                 return result;
@@ -206,6 +203,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             swapcontext(&active_process->ucontext, &scheduler_context);
 
             // at this point, the parent process should be unblocked
+            log_event(active_process, "WAIT_2");
             result = wait_for_one(pid, wstatus);
 
 
@@ -225,7 +223,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 log_event(active_process, "WAIT_1");
                 pid_t result = wait_for_anyone(wstatus);
                 // printf("wait for anyone result 1: %d\n", result);
-                if (result != 0) {
+                if (result != -1) {
                     return result;
                 }
 
@@ -344,8 +342,10 @@ void signal_handler(int signal) {
         }
     } else {
         if (signal == SIGINT) {
+            log_event(active_process, "SIGNALED");
             p_kill(fgPid, S_SIGTERM);
         } else if (signal == SIGTSTP) {
+            log_event(active_process, "STOPPED");
             p_kill(fgPid, S_SIGSTOP);
         }
     }

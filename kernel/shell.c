@@ -34,7 +34,6 @@ void shell_process() {
                     if (cmdType == LOGOUT) {
                         p_exit();
                     }
-                    free(cmd);
                 } else {
                     if (isKnownProgram(cmd)) {
                         executeLine(cmd, MID);

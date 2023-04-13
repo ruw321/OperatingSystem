@@ -150,6 +150,7 @@ void scheduler() {
                     //printf("process is finished (not stopped by the timer)\n");
                     pcb_node* parent = get_node_by_pid_all_queues(active_process->ppid);
                     if (parent != NULL) {
+                        log_event(active_process, "ZOMBIE");
                         // remove the node from children queue and add it to the zombies queue
                         pcb_node *newZombie = dequeue_by_pid(parent->pcb->children, active_process->pid);
                         newZombie->pcb->toWait = false;
@@ -170,7 +171,10 @@ void scheduler() {
                     }
                     
                     // TODO: orphan clean ups
-                    // k_process_cleaup_orphan(active_process);
+                    if (clean_orphan(active_process) == FAILURE) {
+                        perror("Failed to cleanup zombies.\n");
+                    }
+                    
                 } else {
                     log_event(active_process, "DONTBEHERE");
                     printf("Should not enter here\n");

@@ -483,21 +483,22 @@ void pollBackgroundProcesses() {
     int wstatus;
     pid_t pid;
     pid = p_waitpid(-1, &wstatus, true);
-    if (pid == -1) {
-        return;
+    while (pid != 0) {
+        if (W_WIFEXITED(wstatus)) {
+            Job *job = updateJobList(&_jobList, pid, JOB_FINISHED);
+            writeJobState(job);
+            removeJobList(&_jobList, pid);
+        } else if (W_WIFSIGNALED(wstatus)) {
+            Job *job = updateJobList(&_jobList, pid, JOB_TERMINATED);
+            writeJobState(job);
+            removeJobList(&_jobList, pid);
+        } else if (W_WIFSTOPPED(wstatus)) {
+            Job *job = updateJobList(&_jobList, pid, JOB_STOPPED);
+            writeJobState(job);
+        }
+        pid = p_waitpid(-1, &wstatus, true);
     }
-    if (W_WIFEXITED(wstatus)) {
-        Job *job = updateJobList(&_jobList, pid, JOB_FINISHED);
-        writeJobState(job);
-        removeJobList(&_jobList, pid);
-    } else if (W_WIFSIGNALED(wstatus)) {
-        Job *job = updateJobList(&_jobList, pid, JOB_TERMINATED);
-        writeJobState(job);
-        removeJobList(&_jobList, pid);
-    } else if (W_WIFSTOPPED(wstatus)) {
-        Job *job = updateJobList(&_jobList, pid, JOB_STOPPED);
-        writeJobState(job);
-    }
+    
 }
 
 Job *findTheCurrentJob(JobList *jobList) {

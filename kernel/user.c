@@ -171,7 +171,11 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     // if there is no children to wait for, return -1
     if (is_empty(active_process->children) && is_empty(active_process->zombies)) {
         // printf("shouldnt be here\n");
-        return -1;
+        if (pid == -1) {
+            return 0;
+        } else {
+            return -1;
+        }
     }
 
     if (pid > 0) {  // a particule process

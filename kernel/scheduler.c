@@ -31,7 +31,7 @@ void alarm_handler(int signum)
         if (strcmp(tmp->pcb->pname, "sleep") == 0) {
             if (tmp->pcb->state != STOPPED) {
                 if (tmp->pcb->ticks_left > 0) {
-                    tmp->pcb->ticks_left --;
+                    tmp->pcb->ticks_left--;
                 } else{
                     tmp->pcb->state = RUNNING;
                     // add to ready queue

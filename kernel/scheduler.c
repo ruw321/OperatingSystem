@@ -178,7 +178,7 @@ void scheduler() {
             }   
         }
     }
-    
+
     active_process = next_process();
     log_event(active_process, "SCHEDULE");
     p_active_context = &active_process->ucontext;
@@ -291,4 +291,10 @@ int haveChildrenToWait(pcb *process) {
         }
         return 0;
     }
+}
+
+
+void deconstruct_idle() {
+    free(idle_process->ucontext.uc_stack.ss_sp);
+    free(idle_process);
 }

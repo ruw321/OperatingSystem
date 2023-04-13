@@ -70,7 +70,6 @@ int k_process_kill(pcb *process, int signal) {
 
     } else if (signal == S_SIGCONT) {
         if (process->state == STOPPED) {
-            // TODO: why?
             if (strcmp(process->pname, "sleep") == 0) {
                 process->prev_state = process->state;
                 process->state = BLOCKED;
@@ -165,6 +164,7 @@ int k_process_cleanup(pcb* process) {
 
     deconstruct_queue(process->zombies);
     deconstruct_queue(process->children);
+    free(process->pname);
     return SUCCESS;
 }
 

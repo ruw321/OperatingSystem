@@ -32,8 +32,7 @@ void shell_process() {
                         executeLine(cmd, priority);
                     }
                     if (cmdType == LOGOUT) {
-                        // TODO: logout
-                        
+                        p_exit();
                     }
                     free(cmd);
                 } else {

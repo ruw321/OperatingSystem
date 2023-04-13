@@ -278,11 +278,17 @@ pcb_node* get_node_by_pid_all_alive_queues(pid_t pid) {
     }
 }
 
-void p_exit(void) {
-    // k_process_cleanup(active_process);
-    // check if it the first process (shell)
-    active_process->state = EXITED;
-    setcontext(&scheduler_context);
+int p_exit(void) {   
+    if (k_process_cleanup(active_process)) {
+        printf("Failed to clean up process.\n");
+        return FAILURE;
+    }
+    // shell
+    if (active_process->pid == 1) {
+        deconstruct_shell();
+    }
+
+    return SUCCESS;
 }
 
 int p_nice(pid_t pid, int priority) {
@@ -357,4 +363,22 @@ int register_signals() {
     }
 
     return SUCCESS;
+}
+
+void deconstruct_shell() {
+
+    deconstruct_idle();
+
+    deconstruct_priority_queue(ready_queue);
+    deconstruct_queue(stopped_queue);
+    deconstruct_queue(exited_queue);
+
+    log_cleanup();
+    
+    free(main_context.uc_stack.ss_sp);
+    free(scheduler_context.uc_stack.ss_sp);
+
+    printf("Log out succeed.\n");
+
+    exit(0);
 }

@@ -1,5 +1,4 @@
-*
-!*.c
-!*.h
-!README*
-!Makefile
+*.o
+/bin/pennOS
+/bin/pennFAT
+/log/log.txt

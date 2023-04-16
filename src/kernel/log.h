@@ -9,6 +9,7 @@ extern int tick_tracker;
 
 void log_init();
 void log_event(pcb* pcb, char* action);
+void log_pnice(pcb* pcb, int new);
 void log_cleanup();
 
 #endif

@@ -42,11 +42,7 @@ void alarm_handler(int signum)
             
         }
     }
-    log_event(active_process, "Time Tick");
     swapcontext(&active_process->ucontext, &scheduler_context);
-
-    // pcb_t* old_process = active_process;
-    // swapcontext(&old_process->ucontext, &scheduler_context);
 }
 
 
@@ -100,14 +96,11 @@ void scheduler() {
     sigprocmask(SIG_BLOCK, &mask, NULL);
     set_timer();
 
-    //printf("before active process pid: %i\n", active_process->pid);
-    // printf("scheduler is running\n");
     // clean up the previous process
     // make sure the current context is not the scheduler context and ready queue is not empty
     
     if (p_active_context != NULL && active_process->state != BLOCKED && memcmp(p_active_context, &scheduler_context, sizeof(ucontext_t)) != 0 && active_process != idle_process) {
       
-        // printf("active process pid: %i\n", active_process->pid);
         // first remove it from the ready queue
         pcb_node *currNode = dequeue_front_by_priority(ready_queue, active_process->priority);
         
@@ -119,9 +112,7 @@ void scheduler() {
 
             // check how the previous process ended
             if (stopped_by_timer || active_process->pid == 1) {
-                // printf("add back to the queue active process state = %d pid = %d\n", active_process->state, active_process->pid);
                 
-                // printf("process is stopped by the timer\n");
                 active_process->prev_state = READY;
                 active_process->state = READY;
 
@@ -131,21 +122,13 @@ void scheduler() {
                 stopped_by_timer = false;
             } 
             else {
-                // printf("active process state = %d pid = %d\n", active_process->state, active_process->pid);
-                // check whether the process is completed or blocked or stopped
-
-                // here: we don't know whether the process has finished running or not
-                // since only process that is unblocked can come in here
-
-                // printQueue(ready_queue->mid);
                 log_event(active_process, "FINISHED");
 
                 if (active_process->state == RUNNING) {
                         
-                    // currNode->pcb->state = ZOMBIED;
                     // process completed, add it to the exit queue
                     
-                    log_event(currNode->pcb, "EQ_EXIT");
+                    log_event(currNode->pcb, "EXITED");
                     enqueue(exited_queue, currNode);
     
                     active_process->prev_state = active_process->state;
@@ -174,7 +157,7 @@ void scheduler() {
                         printf("Parent node is not supposed to be null\n");
                     }
                     
-                    // TODO: orphan clean ups
+                    // orphan clean ups
                     if (clean_orphan(active_process) == FAILURE) {
                         perror("Failed to cleanup zombies.\n");
                     }

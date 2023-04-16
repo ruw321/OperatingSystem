@@ -92,21 +92,19 @@ pid_t wait_for_one(pid_t pid, int *wstatus) {
         child = get_node_by_pid(exited_queue, pid);
     }
 
-
     // reap zombie
     pcb_node* zombie = get_node_by_pid(parent->zombies, pid);
     if (zombie != NULL) {
+        log_event(zombie->pcb, "WAITED");
         dequeue_by_pid(parent->zombies, pid);
         dequeue_by_pid(exited_queue, pid);
         free(zombie->pcb);
     }
 
-
     if (child == NULL) {
         printf("Error: cannot find a process with this pid: %d\n", pid);
         return -1;
     }
-
 
     if (child->pcb->ppid != parent->pid) {
         printf("Error: the calling thread is not the process's parent pid: %d\n", pid);
@@ -115,14 +113,12 @@ pid_t wait_for_one(pid_t pid, int *wstatus) {
 
     if (child->pcb->prev_state != child->pcb->state && !(child->pcb->prev_state == RUNNING && child->pcb->state == READY)) {
         child->pcb->prev_state = child->pcb->state;
-        
+        log_event(child->pcb, "WAITED");
         if (wstatus != NULL) {
             *wstatus = child->pcb->state;
         }
-        
         return pid;
     }
-
 
     // if WNOHANG was specified and one or more child(ren) specified by pid exist, 
     // but have not yet changed state, then 0 is returned.
@@ -133,6 +129,7 @@ pid_t wait_for_anyone(int *wstatus) {
     // if zombie queue is not empty, then we return the first zombie
     if (!is_empty(active_process->zombies)) {
         pcb_node* zombie_node = active_process->zombies->head;
+        log_event(zombie_node->pcb, "WAITED");
         pid_t zombiePID = zombie_node->pcb->pid;
         // set the status
         if (wstatus != NULL) {
@@ -149,6 +146,7 @@ pid_t wait_for_anyone(int *wstatus) {
     if (!is_empty(children)) {
         for (pcb_node* child = children->head; child != NULL; child = child->next) {
             if (child->pcb->prev_state != child->pcb->state && !(child->pcb->prev_state == RUNNING && child->pcb->state == READY)) {
+                log_event(child->pcb, "WAITED");
                 child->pcb->prev_state = child->pcb->state;
                 // set the status
                 if (wstatus != NULL) {
@@ -182,7 +180,6 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
         } else {
             // if there are zombies, reap and return right away
             // sigprocmask(SIG_BLOCK, &mask, NULL);
-            log_event(active_process, "WAIT_1");
             pid_t result = wait_for_one(pid, wstatus);
             if (result != 0) {
                 return result;
@@ -203,10 +200,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             swapcontext(&active_process->ucontext, &scheduler_context);
 
             // at this point, the parent process should be unblocked
-            log_event(active_process, "WAIT_2");
             result = wait_for_one(pid, wstatus);
-
-
 
             if (result == 0) {
                 printf("cannot 0, should return pid instead because nohang is false\n");
@@ -277,6 +271,7 @@ pcb_node* get_node_by_pid_all_alive_queues(pid_t pid) {
 }
 
 int p_exit(void) {   
+    log_event(active_process, "EXITED");
     if (k_process_cleanup(active_process)) {
         printf("Failed to clean up process.\n");
         return FAILURE;
@@ -303,8 +298,10 @@ int p_nice(pid_t pid, int priority) {
             printf("node with the pid %i does not exist\n", pid);
             return -1;
         }
+        log_pnice(target_node->pcb, priority);
         target_node->pcb->priority = priority;
     } else {
+        log_pnice(target_node->pcb, priority);
         // if it is, change the queue if necessary
         if (target_node->pcb->priority != priority) {
             // change the queue
@@ -342,10 +339,8 @@ void signal_handler(int signal) {
         }
     } else {
         if (signal == SIGINT) {
-            log_event(active_process, "SIGNALED");
             p_kill(fgPid, S_SIGTERM);
         } else if (signal == SIGTSTP) {
-            log_event(active_process, "STOPPED");
             p_kill(fgPid, S_SIGSTOP);
         }
     }

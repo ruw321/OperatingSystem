@@ -57,6 +57,7 @@ int k_process_kill(pcb *process, int signal) {
     }
 
     if (signal == S_SIGSTOP) {
+        log_event(process, "STOPPED");
         process->prev_state = process->state;
         process->state = STOPPED;
 
@@ -75,6 +76,8 @@ int k_process_kill(pcb *process, int signal) {
         }
 
     } else if (signal == S_SIGCONT) {
+        log_event(process, "CONTINUED");
+
         if (process->state == STOPPED) {
             if (strcmp(process->pname, "sleep") == 0) {
                 process->prev_state = BLOCKED;
@@ -92,6 +95,7 @@ int k_process_kill(pcb *process, int signal) {
             }       
         }
     } else if (signal == S_SIGTERM) {
+        log_event(process, "SIGNALED");
 
         process->prev_state = process->state;
         process->state = TERMINATED;
@@ -144,34 +148,35 @@ int k_process_cleanup(pcb* process) {
     dequeue_by_pid(cur_queue, process->pid);
 
     // clean up zombies
-    pcb_node* cur_node = process->zombies->head;
-    while (cur_node != NULL) {
-        pcb_node* tmp = cur_node;
-        cur_node = tmp->next;
+    clean_orphan(process);
+    // pcb_node* cur_node = process->zombies->head;
+    // while (cur_node != NULL) {
+    //     pcb_node* tmp = cur_node;
+    //     cur_node = tmp->next;
 
-        // remove from zombies
-        dequeue_front(process->zombies);
+    //     // remove from zombies
+    //     dequeue_front(process->zombies);
 
-        if (k_process_cleanup(tmp->pcb) == FAILURE) {
-            perror("Failed to cleanup zombies.\n");
-            return FAILURE;
-        }
-    }
+    //     if (k_process_cleanup(tmp->pcb) == FAILURE) {
+    //         perror("Failed to cleanup zombies.\n");
+    //         return FAILURE;
+    //     }
+    // }
 
-    // clean up children
-    cur_node = process->children->head;
-    while (cur_node != NULL) {
-        pcb_node* tmp = cur_node;
-        cur_node = tmp->next;
+    // // clean up children
+    // cur_node = process->children->head;
+    // while (cur_node != NULL) {
+    //     pcb_node* tmp = cur_node;
+    //     cur_node = tmp->next;
 
-        // remove from children
-        dequeue_front(process->children);
+    //     // remove from children
+    //     dequeue_front(process->children);
 
-        if (k_process_cleanup(tmp->pcb) == FAILURE) {
-            perror("Failed to cleanup children.\n");
-            return FAILURE;
-        }
-    }
+    //     if (k_process_cleanup(tmp->pcb) == FAILURE) {
+    //         perror("Failed to cleanup children.\n");
+    //         return FAILURE;
+    //     }
+    // }
 
     deconstruct_queue(process->zombies);
     deconstruct_queue(process->children);
@@ -280,7 +285,6 @@ int clean_orphan(pcb * process) {
             dequeue_by_pid(cur_queue, tmp->pcb->pid);
         }
 
-
         if (k_process_cleanup(tmp->pcb) == FAILURE) {
             perror("Failed to cleanup children.\n");
             return -1;
@@ -294,7 +298,7 @@ int clean_orphan(pcb * process) {
         cur_node = tmp->next;
 
         log_event(tmp->pcb, "ORPHAN");
-        // remove from children
+        // remove from zombies
         dequeue_by_pid(stopped_queue, tmp->pcb->pid);
         dequeue_front(process->zombies);
 

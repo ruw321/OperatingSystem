@@ -1,3 +1,13 @@
+/**
+ * @file fd-table.c
+ * @author Zhiyuan Liang (liangzhy@seas.upenn.edu)
+ * @brief 
+ * @version 0.1
+ * @date 2023-04-16
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #include "fd-table.h"
 
 FdNode *createFdNode(int openMode, int directoryEntryOffset, int fileOffset) {

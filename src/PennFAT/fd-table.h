@@ -1,3 +1,13 @@
+/**
+ * @file fd-table.h
+ * @author Zhiyuan Liang (liangzhy@seas.upenn.edu)
+ * @brief 
+ * @version 0.1
+ * @date 2023-04-16
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #ifndef FD_TABLE_H
 #define FD_TABLE_H
 
@@ -22,8 +32,8 @@ extern uint16_t *fs_FAT16InMemory;
 /* We use linked list to implement the file descriptor table. */
 
 
-/*
-There are three open mode supported by PennFAT: F_WRITE, F_READ and F_APPEND.
+/**
+ * @brief There are three open mode supported by PennFAT: F_WRITE, F_READ and F_APPEND.
 According to ed #953, each file can only be read/write exclusivly which means only one instance can open() a file at a time.
 Under F_APPEND mode, the fileOffset will be set to the end of the file initially and it can only be increased.
 Under F_WRITE/F_APPEND mode, if the fileOffset is set to the position beyond the file size, the file system will occupy the space for the gap.
@@ -40,19 +50,77 @@ typedef struct FdNode {
     struct FdNode* next;
 } FdNode;
 
+/**
+ * @brief The file descriptor table is a linked list of FdNode.
+ * 
+ */
 typedef struct FdTable {
     FdNode *head;
     FdNode *tail;
 } FdTable;
 
+/**
+ * @brief Create a Fd Node object
+ * 
+ * @param openMode 
+ * @param directoryEntryOffset 
+ * @param fileOffset 
+ * @return FdNode* 
+ */
 FdNode *createFdNode(int openMode, int directoryEntryOffset, int fileOffset);
+/**
+ * @brief Initialize the file descriptor table.
+ * 
+ * @param fdTable 
+ * @return int 
+ */
 int initFdTable(FdTable *fdTable);
+/**
+ * @brief Clear the file descriptor table.
+ * 
+ * @param fdTable 
+ * @return int 
+ */
 int clearFdTable(FdTable *fdTable);
+/**
+ * @brief Append a new FdNode to the file descriptor table.
+ * 
+ * @param fdTable 
+ * @param newNode 
+ * @return int 
+ */
 int appendFdTable(FdTable *fdTable, FdNode *newNode);
+/**
+ * @brief Remove a FdNode from the file descriptor table.
+ * 
+ * @param fdNode 
+ * @return int 
+ */
 int removeFdNode(FdNode *fdNode);
+/**
+ * @brief Check if the file is being used by any file descriptor.
+ * 
+ * @param fdTable 
+ * @param directoryEntryOffset 
+ * @return true 
+ * @return false 
+ */
 bool isFileBeingUsed(FdTable *fdTable, int directoryEntryOffset);
+/**
+ * @brief Check if the file is being written by any file descriptor.
+ * 
+ * @param fdTable 
+ * @param directoryEntryOffset 
+ * @return true 
+ * @return false 
+ */
 bool isFileBeingWritten(FdTable *fdTable, int directoryEntryOffset);
-
+/**
+ * @brief Find the first available file descriptor.
+ * 
+ * @param fds 
+ * @return int 
+ */
 int findAvailableFd(FdNode **fds);
 
 #endif

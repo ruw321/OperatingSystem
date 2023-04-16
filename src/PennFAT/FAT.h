@@ -1,3 +1,13 @@
+/**
+ * @file FAT.h
+ * @author Zhiyuan Liang (liangzhy@seas.upenn.edu)
+ * @brief 
+ * @version 0.1
+ * @date 2023-04-16
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #ifndef FAT_H
 #define FAT_H
 
@@ -14,10 +24,8 @@
 
 #define MAX_FILE_NAME_LENGTH 32
 
-/* 
----------- Refer to PennOS document ----------
-
-The LSB(rightmost under little endian) of the first entry of the FAT specifies the block size with the mapping as below:
+/**
+ * @brief The LSB(rightmost under little endian) of the first entry of the FAT specifies the block size with the mapping as below:
 {LSB : size in bytes} = {0:256; 1:512; 2:1024; 3:2048; 4:4096}
 The MSB(leftmost under little endian) of the first entry of the FAT specifies the number of blocks that FAT region occupies.
 The MSB should be ranged from 1-32 (numbers outside of this range will be considered an error).
@@ -71,9 +79,9 @@ The file should be deleted after Process B closes the file.
 #define FILE_PERM_READ_WRITE_EXEC 7 // 111
 
 #define RESERVED_BYTES 16
-/* 
----------- Refer to PennOS document ----------
-The structure of the directory entry as stored in the filesystem is as follows:
+
+/**
+ * @brief The structure of the directory entry as stored in the filesystem is as follows:
 - char name[32]: null-terminated file name 
   name[0] also serves as a special marker:
     – 0: end of directory
@@ -105,51 +113,179 @@ typedef struct DirectoryEntry {
     time_t mtime; // 8-byte
     char reserved[RESERVED_BYTES];   // 16-byte reserved space for extension
 } DirectoryEntry;
-
+/**
+ * @brief Create a FATConfig object
+ * 
+ * @param name 
+ * @param LSB 
+ * @param MSB 
+ * @return FATConfig* 
+ */
 FATConfig *createFATConfig(const char *name, uint16_t LSB, uint16_t MSB);
-
+/**
+ * @brief Create a FAT16 object in memory
+ * 
+ * @param config 
+ * @return uint16_t* 
+ */
 uint16_t *createFAT16InMemory(FATConfig *config);
-
+/**
+ * @brief Create a FAT16 object on disk
+ * 
+ * @param config 
+ * @return int 
+ */
 int createFATOnDisk(FATConfig *config);
 
 /* ##### TODO: Thread Safety ##### */
 
-/* Return the index of next empty FAT entry. */
+/**
+ * @brief Return the index of next empty FAT entry.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @return int 
+ */
 int findEmptyFAT16Entry(FATConfig *config, uint16_t *FAT16);
-
+/**
+ * @brief Create a Directory Entry object
+ * 
+ * @param name 
+ * @param size 
+ * @param firstBlock 
+ * @param type 
+ * @param perm 
+ * @return DirectoryEntry* 
+ */
 DirectoryEntry *createDirectoryEntry(const char *name, uint32_t size, uint16_t firstBlock, uint8_t type, uint8_t perm);
-
+/**
+ * @brief Create a File Directory On Disk object
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param fileName 
+ * @param fileType 
+ * @param filePerm 
+ * @return int 
+ */
 int createFileDirectoryOnDisk(FATConfig *config, uint16_t *FAT16, const char *fileName, uint8_t fileType, uint8_t filePerm);
-
-/* Return the offset of the file directory entry in data region. */
+/**
+ * @brief Return the offset of the file directory entry in data region.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param fileName 
+ * @return int 
+ */
 int findFileDirectory(FATConfig *config, uint16_t *FAT16, const char *fileName);
-
-/* Read the directory entry from FAT and set it to dir. */
+/**
+ * @brief Read the directory entry from FAT and set it to dir.
+ * 
+ * @param config 
+ * @param offset 
+ * @param dir 
+ * @return int 
+ */
 int readDirectoryEntry(FATConfig *config, int offset, DirectoryEntry *dir);
-
-/* Write the directory entry to the offset. */
+/**
+ * @brief Write the directory entry to the offset.
+ * 
+ * @param config 
+ * @param offset 
+ * @param dir 
+ * @return int 
+ */
 int writeFileDirectory(FATConfig *config, int offset, DirectoryEntry *dir);
-
+/**
+ * @brief Delete the file directory entry.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param directoryEntryOffset 
+ * @return int 
+ */
 int deleteFileDirectory(FATConfig *config, uint16_t *FAT16, int directoryEntryOffset);
-
+/**
+ * @brief Delete the file directory entry by file name.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param fileName 
+ * @return int 
+ */
 int deleteFileDirectoryByName(FATConfig *config, uint16_t *FAT16, const char *fileName);
-
+/**
+ * @brief Judge whether the directory entry is to be deleted.
+ * 
+ * @param config 
+ * @param offset 
+ * @return true 
+ * @return false 
+ */
 bool isDirectoryEntryToDelete(FATConfig *config, int offset);
-
+/**
+ * @brief Read the file data from FAT and set it to buffer.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param startBlock 
+ * @param startBlockOffset 
+ * @param size 
+ * @param buffer 
+ * @return int 
+ */
 int readFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, char *buffer);
-
+/**
+ * @brief Write the buffer to FAT.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param startBlock 
+ * @param startBlockOffset 
+ * @param size 
+ * @param buffer 
+ * @return int 
+ */
 int writeFAT(FATConfig *config, uint16_t *FAT16, int startBlock, int startBlockOffset, int size, const char *buffer);
-
-/* Return the offset of the file end. */
+/**
+ * @brief Return the offset of the file end.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param fileName 
+ * @return int 
+ */
 int traceFileEnd(FATConfig *config, uint16_t *FAT16, const char *fileName);
-
-/* Return the byte number from the file beginning to the file offset */
+/**
+ * @brief Return the byte number from the file beginning to the file offset.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param directoryEntryOffset 
+ * @param fileOffset 
+ * @return int 
+ */
 int traceBytesFromBeginning(FATConfig *config, uint16_t *FAT16, int directoryEntryOffset, int fileOffset);
-
-/* Return the byte number from the file offset to the file end*/
+/**
+ * @brief Return the byte number from the file offset to the file end.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param directoryEntryOffset 
+ * @param fileOffset 
+ * @return int 
+ */
 int traceBytesToEnd(FATConfig *config, uint16_t *FAT16, int directoryEntryOffset, int fileOffset);
-
-/* Return the offset of the n bytes after the given file offset*/
+/**
+ * @brief Return the offset of the n bytes after the given file offset.
+ * 
+ * @param config 
+ * @param FAT16 
+ * @param directoryEntryOffset 
+ * @param fileOffset 
+ * @param n 
+ * @return int 
+ */
 int traceOffset(FATConfig *config, uint16_t *FAT16, int directoryEntryOffset, int fileOffset, int n);
 
 #endif

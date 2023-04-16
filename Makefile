@@ -24,7 +24,7 @@ KERNEL_OBJS = $(KERNEL_SRCS:.c=.o)
 FS_MAIN = $(FS_DIR)/pennFAT.c
 FS_PROG = $(BIN_DIR)/pennFAT
 PROG = $(BIN_DIR)/pennOS
-CLEANS = $(KERNEL_OBJS) $(FS_OBJS) $(PROG) log/log.txt
+CLEANS = $(KERNEL_OBJS) $(FS_OBJS) $(PROG) $(FS_PROG) log/log.txt $(FS_DIR)/pennFAT.o
 
 .PHONY : $(SRC_SUBDIRS) clean
 

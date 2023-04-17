@@ -30,7 +30,7 @@ int kernel_init() {
     stopped_by_timer = false;
     
     if (ready_queue == NULL) {
-        perror("error initializing the priority queue");
+        p_set_errno(P_FAIL_TO_INITIALIZE_QUEUE);
         return FAILURE;
     }
 
@@ -51,7 +51,7 @@ int k_process_kill(pcb *process, int signal) {
     sigprocmask(SIG_BLOCK, &mask, NULL);
 
     if (process->pid == 1) {
-        perror("Should not kill shell\n");
+        p_set_errno(P_SHOULD_NOT_KILL_SHELL);
         sigprocmask(SIG_UNBLOCK, &mask, NULL);
         return FAILURE;
     }
@@ -87,8 +87,7 @@ int k_process_kill(pcb *process, int signal) {
                 process->state = READY;
                 pcb_node* new_node = dequeue_by_pid(stopped_queue, process->pid);
                 if (new_node == NULL) {
-                    perror("new_node should not be NULL.\n");
-
+                    p_set_errno(P_NODE_IS_NULL);
                 } else {
                     enqueue_by_priority(ready_queue, process->priority, new_node);
                 }
@@ -114,7 +113,7 @@ int k_process_kill(pcb *process, int signal) {
         //remove from its parent's children and add it to zombies
         pcb_node* parent_node = get_node_by_pid_all_queues(process->ppid);
         if (parent_node == NULL) {
-            perror("Parent node should not be NULL.\n");
+            p_set_errno(P_PARENT_IS_NULL);
             sigprocmask(SIG_UNBLOCK, &mask, NULL);
             return FAILURE;
         }
@@ -140,7 +139,8 @@ int k_process_kill(pcb *process, int signal) {
 
 int k_process_cleanup(pcb* process) {
     if (process == NULL) {
-        perror("The process to be cleanup cannot be NULL.\n");
+        p_set_errno(P_PROCESS_IS_NULL);
+        return FAILURE;
     }
 
     // remove it from ready queue
@@ -190,7 +190,7 @@ int block_process(pid_t pid) {
 
     pcb_node* node = get_node_by_pid_from_priority_queue(ready_queue, pid);
     if (node == NULL) {
-        perror("Process is not in the ready queue.\n");
+        p_set_errno(P_PROCESS_NOT_IN_READY_QUEUE);
         return FAILURE;
     }
 
@@ -217,7 +217,7 @@ int unblock_process(pid_t pid) {
     // find the process in stopped queue given its pid
     pcb_node* node = get_node_by_pid(stopped_queue, pid);
     if (node == NULL) {
-        perror("Process is not in the stopped queue.\n");
+        p_set_errno(P_PROCESS_NOT_IN_STOPPED_QUEUE);
         return FAILURE;
     }
 
@@ -232,7 +232,6 @@ int unblock_process(pid_t pid) {
         
         cur_pcb->ticks_left = 0; // to indicate that parent no longer waits for its child
 
-        printf("adding the node back to the ready queue: %i\n", cur_pcb->pid);
         enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
     }
     return SUCCESS;
@@ -243,7 +242,7 @@ int process_unblock(pid_t pid) {
     // find the corresponding pcb
     pcb_node* unblock_node = get_node_by_pid(stopped_queue, pid);
     if (unblock_node == NULL) {
-        printf("The process you are unblocking doesn't exist in the stopped queue\n");
+        p_set_errno(P_PROCESS_NOT_IN_STOPPED_QUEUE);
         return -1;
     }
 
@@ -286,7 +285,7 @@ int clean_orphan(pcb * process) {
         }
 
         if (k_process_cleanup(tmp->pcb) == FAILURE) {
-            perror("Failed to cleanup children.\n");
+            p_set_errno(P_FAIL_TO_CLEANUP);
             return -1;
         }
     }
@@ -303,7 +302,7 @@ int clean_orphan(pcb * process) {
         dequeue_front(process->zombies);
 
         if (k_process_cleanup(tmp->pcb) == FAILURE) {
-            perror("Failed to cleanup children.\n");
+            p_set_errno(P_FAIL_TO_CLEANUP);
             return -1;
         }
     }

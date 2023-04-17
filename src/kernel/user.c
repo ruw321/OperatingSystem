@@ -17,7 +17,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     // forks a new thread that retains most of the attributes of the parent thread 
     pcb* pcb = k_process_create(active_process);
     if (pcb == NULL) {
-        perror("failed to create pcb");
+        p_perror("failed to create pcb");
         return -1;
     }
 
@@ -348,12 +348,12 @@ void signal_handler(int signal) {
 
 int register_signals() {
     if (signal(SIGINT, signal_handler) == SIG_ERR) {
-        perror("Failed to register handler for SIGINT.\n");
+        p_perror("Failed to register handler for SIGINT.\n");
         return FAILURE;
     }
 
     if (signal(SIGTSTP, signal_handler) == SIG_ERR) {
-        perror("Failed to register handler for SIGSTOP.\n");
+        p_perror("Failed to register handler for SIGSTOP.\n");
         return FAILURE;
     }
 

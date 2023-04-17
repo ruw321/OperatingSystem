@@ -1,3 +1,6 @@
+#ifndef KERNEL_H
+#define KERNEL_H
+
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
@@ -46,3 +49,5 @@ bool is_foreground(pid_t pid);
 int process_unblock(pid_t pid);
 
 int clean_orphan(pcb * process);
+
+#endif

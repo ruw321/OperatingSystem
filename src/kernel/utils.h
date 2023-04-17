@@ -11,6 +11,7 @@
 #include <time.h>
 #include <valgrind/valgrind.h> 
 #include "global2.h"
+#include "perrno.h"
 #include "../PennFAT/fd-table.h"
 
 typedef struct pcb {

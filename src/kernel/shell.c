@@ -20,7 +20,7 @@ void shell_process() {
     char *line = NULL;
     LineType lineType;
     while (true) {
-
+        p_reset_errno();
         writePrompt();
         lineType = readAndParseUserInput(&line);
         pollBackgroundProcesses();

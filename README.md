@@ -4,7 +4,7 @@
 | Name | PennKey |
 | --- | --- |
 | Ruifan Wang | wang321 |
-| Jiaqi Xie | [PennKey] |
+| Jiaqi Xie | jiaqixie |
 | Zhiyuan Liang  | liangzhy |
 | Shuo Sun | [PennKey] |
 

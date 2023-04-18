@@ -149,10 +149,10 @@ int shell_init(int argc, const char **argv) {
     // initialize logger
     log_init();
     // initialize file system
-    // if (fs_mount(argv[1]) == -1) {
-    //     return FAILURE;
-    // } 
-    fs_mount("test");
+    if (fs_mount(argv[1]) == -1) {
+        return FAILURE;
+    } 
+    // fs_mount("test");
 
     // initialize job list
     initJobList(&_jobList);

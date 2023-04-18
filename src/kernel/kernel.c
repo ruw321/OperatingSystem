@@ -209,34 +209,6 @@ int block_process(pid_t pid) {
     return SUCCESS;
 }
 
-bool is_foreground(pid_t pid) {
-    return false;
-}
-
-int unblock_process(pid_t pid) {
-    // find the process in stopped queue given its pid
-    pcb_node* node = get_node_by_pid(stopped_queue, pid);
-    if (node == NULL) {
-        p_set_errno(P_PROCESS_NOT_IN_STOPPED_QUEUE);
-        return FAILURE;
-    }
-
-    pcb* cur_pcb = node->pcb;
-
-    // remove from the stopped queue, and add it back to the ready queue
-    if (cur_pcb->state == BLOCKED) {
-        pcb_node* p_node = dequeue_by_pid(stopped_queue, cur_pcb->pid);
-
-        cur_pcb->prev_state = cur_pcb->state;
-        cur_pcb->state = READY;
-        
-        cur_pcb->ticks_left = 0; // to indicate that parent no longer waits for its child
-
-        enqueue_by_priority(ready_queue, cur_pcb->priority, p_node);
-    }
-    return SUCCESS;
-}
-
 int process_unblock(pid_t pid) {
     // printf("Unblocking process %d\n", pid);
     // find the corresponding pcb

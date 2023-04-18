@@ -48,36 +48,180 @@ typedef struct priority_queue {
     pcb_queue* low;     // priority 1
 } priority_queue;
 
+/**
+ * @brief create a new pcb with the given ucontext
+ * 
+ * @param ucontext 
+ * @param pid 
+ * @return pcb* 
+ */
 pcb* new_pcb(ucontext_t* ucontext, pid_t pid);
-pcb_node* new_pcb_node(pcb* pcb);       // Create a new pcb node with the given data
-pcb_queue* new_pcb_queue();     // Create an empty pcb queue
-priority_queue* new_priority_queue();   // Create an empty priority queue
 
-bool is_empty(pcb_queue* queue);     // Check if the queue is empty
+/**
+ * @brief Create a new pcb node with the given pcb
+ * 
+ * @param pcb 
+ * @return pcb_node* 
+ */
+pcb_node* new_pcb_node(pcb* pcb);       
+
+/**
+ * @brief Create an empty pcb queue
+ * 
+ * @return pcb_queue* 
+ */
+pcb_queue* new_pcb_queue();    
+
+/**
+ * @brief Create an empty priority queue
+ * 
+ * @return priority_queue* 
+ */
+priority_queue* new_priority_queue();
+
+/**
+ * @brief Check if the pcb queue is empty
+ * 
+ * @param queue 
+ * @return true 
+ * @return false 
+ */
+bool is_empty(pcb_queue* queue);
+
+/**
+ * @brief check if the priority queue is empty
+ * 
+ * @param ready_queue 
+ * @return true 
+ * @return false 
+ */
 bool is_priority_queue_empty(priority_queue* ready_queue);
 
-pcb_queue* get_pcb_queue_by_priority(priority_queue* ready_queue, int priority);    // return the pointer to the pcb_queue of the required priority
+/**
+ * @brief return the pointer to the pcb_queue of the required priority
+ * 
+ * @param ready_queue 
+ * @param priority 
+ * @return pcb_queue* 
+ */
+pcb_queue* get_pcb_queue_by_priority(priority_queue* ready_queue, int priority);
 
-void enqueue(pcb_queue* queue, pcb_node* node);     // Enqueue a new element to the queue
+/**
+ * @brief Enqueue a new node to the pcb queue
+ * 
+ * @param queue 
+ * @param node 
+ */
+void enqueue(pcb_queue* queue, pcb_node* node);
+
+/**
+ * @brief Enqueue a node to the ready queue based on it's priority
+ * 
+ * @param ready_queue 
+ * @param priority 
+ * @param node 
+ */
 void enqueue_by_priority(priority_queue* ready_queue, int priority, pcb_node* node);
-pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid);    // Dequeue the element with pid from the queue
-pcb_node *dequeue_front(pcb_queue* queue);      // Dequeue the first element from the queue
-pcb_node *dequeue_front_by_priority(priority_queue* ready_queue, int priority);    // Dequeue the first element from the queue based on the priority
 
-pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);     // Find the element with pid from the queue
-pcb_node* get_node_by_pid_from_priority_queue(priority_queue* ready_queue, pid_t pid);   // Find the element with pid from the priority queue
+/**
+ * @brief Dequeue the node with pid from the queue
+ * 
+ * @param queue 
+ * @param pid 
+ * @return pcb_node* 
+ */
+pcb_node* dequeue_by_pid(pcb_queue* queue, pid_t pid);
 
-void deconstruct_queue(pcb_queue* queue);   // free the pcb queue
-void deconstruct_priority_queue(priority_queue* ready_queue);   // free the pcb priority queue
+/**
+ * @brief Dequeue the first node from the queue
+ * 
+ * @param queue 
+ * @return pcb_node* 
+ */
+pcb_node *dequeue_front(pcb_queue* queue);
 
-pcb_node* get_node_from_ready_queue(priority_queue* ready_queue, pid_t pid);     // Find the element with pid from the ready queue
+/**
+ * @brief  Dequeue the first node from the queue based on the priority
+ * 
+ * @param ready_queue 
+ * @param priority 
+ * @return pcb_node* 
+ */
+pcb_node *dequeue_front_by_priority(priority_queue* ready_queue, int priority); 
 
-int pick_priority();        // Randomly pick a queue from ready queue based on the priority
+/**
+ * @brief Get the node by pid from the queue
+ * 
+ * @param queue 
+ * @param pid 
+ * @return pcb_node* 
+ */
+pcb_node* get_node_by_pid(pcb_queue* queue, pid_t pid);
 
-void set_stack(stack_t *stack);        // initialize stack for ucontext
+/**
+ * @brief Get the node by pid from the priority queue
+ * 
+ * @param ready_queue 
+ * @param pid 
+ * @return pcb_node* 
+ */
+pcb_node* get_node_by_pid_from_priority_queue(priority_queue* ready_queue, pid_t pid);
 
-int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_context, char *argv[]); // initializing context
+/**
+ * @brief free the pcb queue
+ * 
+ * @param queue 
+ */
+void deconstruct_queue(pcb_queue* queue);
 
+/**
+ * @brief free the pcb priority queue
+ * 
+ * @param ready_queue 
+ */
+void deconstruct_priority_queue(priority_queue* ready_queue);
+
+/**
+ * @brief Get the node with pid from ready queue
+ * 
+ * @param ready_queue 
+ * @param pid 
+ * @return pcb_node* 
+ */
+pcb_node* get_node_from_ready_queue(priority_queue* ready_queue, pid_t pid);
+
+/**
+ * @brief Randomly pick a queue from ready queue based on the priority
+ * 
+ * @return int 
+ */
+int pick_priority();
+
+/**
+ * @brief initialize stack for ucontext
+ * 
+ * @param stack 
+ */
+void set_stack(stack_t *stack);
+
+/**
+ * @brief initializing context
+ * 
+ * @param ucp 
+ * @param func 
+ * @param argc 
+ * @param next_context 
+ * @param argv 
+ * @return int 
+ */
+int makeContext(ucontext_t *ucp,  void (*func)(), int argc, ucontext_t *next_context, char *argv[]);
+
+/**
+ * @brief print out the queue for ps
+ * 
+ * @param queue 
+ * @return int 
+ */
 int printQueue(pcb_queue *queue);
 
 typedef enum {

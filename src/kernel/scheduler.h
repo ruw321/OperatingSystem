@@ -26,24 +26,79 @@ extern int tick_tracker;
 
 #define TICK 100000     // 1 tick = 0.1s
 
-int set_alarm_handler();    // register signal handler for SIGALARM
-void alarm_handler();       // The signal handler for SIGALARM
-int set_timer();   // set up time interval for SIGALARM
+/**
+ * @brief Set the alarm handler object
+ * 
+ * @return int 
+ */
+int set_alarm_handler();    
 
-pcb* next_process();    // get the next process to run from the ready queue based on priority 
+/**
+ * @brief The signal handler for SIGALARM
+ * 
+ */
+void alarm_handler();
 
-pcb_node* get_node_by_pid_all_queues(pid_t pid);     // Find the element with pid from all the queues
+/**
+ * @brief set up time interval for SIGALARM
+ * 
+ * @return int 
+ */
+int set_timer();  
 
-void scheduler();   // The function of scheduler
+/**
+ * @brief get the next process to run from the ready queue based on priority
+ * 
+ * @return pcb* 
+ */
+pcb* next_process(); 
 
-void idle_func();   // The funciton for the idle process
+/**
+ * @brief Get the node with pid from all the queues
+ * 
+ * @param pid 
+ * @return pcb_node* 
+ */
+pcb_node* get_node_by_pid_all_queues(pid_t pid);
 
-int scheduler_init();   // initialize the scheduler
+/**
+ * @brief The function of scheduler
+ * 
+ */
+void scheduler();   
 
+/**
+ * @brief set up the idle process
+ * 
+ */
+void idle_func();   
+
+/**
+ * @brief suspend the idle process until a signal is delivered to it
+ * 
+ * @return int 
+ */
+int scheduler_init();   
+
+/**
+ * @brief initialize the idle process
+ * 
+ * @return int 
+ */
 int idle_process_init();    // initialize the idle process
 
+/**
+ * @brief check if the process has children to wait on
+ * 
+ * @param process 
+ * @return int 
+ */
 int haveChildrenToWait(pcb *process);
 
+/**
+ * @brief deconstruct the idle process
+ * 
+ */
 void deconstruct_idle();
 
 #endif

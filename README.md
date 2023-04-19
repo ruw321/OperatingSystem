@@ -6,7 +6,7 @@
 | Ruifan Wang | wang321 |
 | Jiaqi Xie | jiaqixie |
 | Zhiyuan Liang  | liangzhy |
-| Shuo Sun | [PennKey] |
+| Shuo Sun | sunshuo |
 
 
 ### Source Files (Description of Code)

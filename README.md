@@ -44,7 +44,7 @@ make
 
 ### Overview of Work Accomplished
 
-[Provide a brief summary of the work that you have accomplished, including any features that you have implemented or bugs that you have fixed.]
+All requirements of regular credit have been accomplished. We did not implement any feature of extra credit.
 
 ### Description of Code and Code Layout
 

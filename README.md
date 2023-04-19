@@ -25,7 +25,7 @@
 
 ### Extra Credit Answers
 
-- [If you completed any extra credit, include your answers here]  
+- N/A 
   
 ### Compilation Instructions
 

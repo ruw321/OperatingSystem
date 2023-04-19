@@ -9,8 +9,6 @@ pcb* k_process_create(pcb * parent) {
     newPCB->prev_state = READY;
 
     newPCB->priority = MID; // default priority is 0
-    newPCB->input_fd = STDIN_FILENO;
-    newPCB->output_fd = STDOUT_FILENO;
 
     newPCB->children = new_pcb_queue();
     newPCB->zombies = new_pcb_queue();

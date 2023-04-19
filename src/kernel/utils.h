@@ -14,38 +14,51 @@
 #include "perrno.h"
 #include "../PennFAT/fd-table.h"
 
+/**
+ * @brief attributes of PCB
+ * 
+ */
 typedef struct pcb {
     ucontext_t ucontext;
     pid_t pid;
-    pid_t ppid;     // parent pid
+    pid_t ppid;     //!< parent pid
     enum process_state prev_state;
-    enum process_state state;       // state of the process
-    int priority;
-    int input_fd;
-    int output_fd;
-    FdNode *fds[MAX_FILE_DESCRIPTOR];   // keep track of open FDs
-    int ticks_left;     // > 1 represents the wait times, -1 means parent is waiting
-    struct pcb_queue* children;     // processes that have not completed yet
-    struct pcb_queue* zombies;      // processes that are completed but the parent has not waited for it yet
-    char* pname;    // name of the function 
-    // TODO: other fields to be added
-    bool toWait;
+    enum process_state state;      //!< state of the process
+    int priority;   //!< priority of the process
+    FdNode *fds[MAX_FILE_DESCRIPTOR];   //!< keep track of open FDs
+    int ticks_left;     //!< ticks left for sleep to be blocked
+    struct pcb_queue* children;     //!< processes that have not completed yet
+    struct pcb_queue* zombies;      //!< processes that are completed but the parent has not waited for it yet
+    char* pname;    //!< name of the function 
+    bool toWait;    //!< true indicates the parent need to wait for this child
 } pcb;
 
+/**
+ * @brief node in the pcb_queue
+ * 
+ */
 typedef struct pcb_node {
     pcb* pcb;
     struct pcb_node* next;
 } pcb_node;
 
+/**
+ * @brief A link list of pcb nodes
+ * 
+ */
 typedef struct pcb_queue {
     pcb_node* head;
     pcb_node* tail;
 } pcb_queue;
 
+/**
+ * @brief the ready queue including three pcb queues of different priorities
+ * 
+ */
 typedef struct priority_queue {  
-    pcb_queue* high;    // priority -1
-    pcb_queue* mid;     // priority 0
-    pcb_queue* low;     // priority 1
+    pcb_queue* high;    //!< priority -1
+    pcb_queue* mid;     //!< priority 0
+    pcb_queue* low;     //!< priority 1
 } priority_queue;
 
 /**

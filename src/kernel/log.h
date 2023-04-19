@@ -11,7 +11,7 @@ extern int tick_tracker;
  * @brief initialize the log
  * 
  */
-void log_init();
+int log_init(const char *filename);
 
 /**
  * @brief do the log event

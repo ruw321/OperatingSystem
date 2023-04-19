@@ -1,11 +1,21 @@
 #include "log.h"
 FILE *log_file;
 
-void log_init() {
-    log_file = fopen(LOG_FILE, "w");
-    if (log_file == NULL) {
-        printf("Error opening file at %s\n", LOG_FILE);
+int log_init(const char *filename) {
+    if (filename == NULL) {
+        log_file = fopen(LOG_FILE, "w");
+        if (log_file == NULL) {
+            printf("Error opening file at %s\n", LOG_FILE);
+            return FAILURE;
+        }
+    } else {
+        log_file = fopen(filename, "w");
+        if (log_file == NULL) {
+            printf("Error opening file at %s\n", filename);
+            return FAILURE;
+        }
     }
+    return SUCCESS;
 }
 
 void log_event(pcb* pcb, char* action) {

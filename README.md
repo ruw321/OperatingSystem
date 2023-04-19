@@ -15,10 +15,49 @@
     |    |── pennFAT
     |    └── pennOS
     ├── src/                     # Source code
-    |    |── kernel/              
+    |    |── kernel/         
+    |    |      |── behavior.c
+    |    |      |── behavior.h
+    |    |      |── global.c
+    |    |      |── global.h
+    |    |      |── global2.h
+    |    |      |── job.c
+    |    |      |── job.h
+    |    |      |── kernel.c
+    |    |      |── kernel.h
+    |    |      |── log.c
+    |    |      |── log.h
+    |    |      |── parser.h
+    |    |      |── parser.c
+    |    |      |── perrno.h
+    |    |      |── perrno.c
+    |    |      |── programs.c
+    |    |      |── programs.h
+    |    |      |── scheduler.c
+    |    |      |── scheduler.h
+    |    |      |── shell.c
+    |    |      |── shell.h     
+    |    |      |── stress.c
+    |    |      |── stress.h     
+    |    |      |── user.c
+    |    |      |── user.h   
+    |    |      |── utils.c
+    |    |      └── utils.h  
     |    └── PennFAT/
+    |           |── FAT.c
+    |           |── FAT.h
+    |           |── fd-table.c
+    |           |── fd-table.h     
+    |           |── filesys.c
+    |           |── filesys.h     
+    |           |── interface.c
+    |           |── interface.h   
+    |           |── pennFAT.c
+    |           |── pennFAT.h  
+    |           |── utils.c
+    |           └── utils.h    
     ├── doc/                     # Documentation files 
-    |    └── [Companion Document]
+    |    └── doc.pdf
     ├── log/                     # PennOS logs
     |    └── log.txt
     └── README.md

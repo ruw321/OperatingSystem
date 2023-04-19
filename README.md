@@ -9,55 +9,55 @@
 | Shuo Sun | [PennKey] |
 
 
-### Source Files
+### Source Files (Description of Code)
     
     ├── bin/                     # Compiled binaries
-    |    |── pennFAT
+    |    |── pennFAT            
     |    └── pennOS
     ├── src/                     # Source code
-    |    |── kernel/         
-    |    |      |── behavior.c
-    |    |      |── behavior.h
+    |    |── kernel/                
+    |    |      |── behavior.c      
+    |    |      |── behavior.h      # Shell behaviors
     |    |      |── global.c
-    |    |      |── global.h
-    |    |      |── global2.h
+    |    |      |── global.h        # global variables
+    |    |      |── global2.h       # macros
     |    |      |── job.c
-    |    |      |── job.h
+    |    |      |── job.h           # Shell process jobs (e.g. fg, bg)
     |    |      |── kernel.c
-    |    |      |── kernel.h
+    |    |      |── kernel.h        # kernel functions
     |    |      |── log.c
-    |    |      |── log.h
+    |    |      |── log.h           # logging functions 
     |    |      |── parser.h
     |    |      |── parser.c
-    |    |      |── perrno.h
+    |    |      |── perrno.h        # self-defined error code and error messages
     |    |      |── perrno.c
     |    |      |── programs.c
-    |    |      |── programs.h
+    |    |      |── programs.h      # shell built-in commands
     |    |      |── scheduler.c
-    |    |      |── scheduler.h
+    |    |      |── scheduler.h     # scheduler for selecting the process to run
     |    |      |── shell.c
-    |    |      |── shell.h     
+    |    |      |── shell.h         # shell initialization
     |    |      |── stress.c
     |    |      |── stress.h     
     |    |      |── user.c
-    |    |      |── user.h   
+    |    |      |── user.h          # user level functions
     |    |      |── utils.c
-    |    |      └── utils.h  
+    |    |      └── utils.h         # structs and functions related to the structs 
     |    └── PennFAT/
     |           |── FAT.c
-    |           |── FAT.h
+    |           |── FAT.h           # file system low level 
     |           |── fd-table.c
-    |           |── fd-table.h     
+    |           |── fd-table.h      # file descriptor table
     |           |── filesys.c
-    |           |── filesys.h     
+    |           |── filesys.h       # high level file system
     |           |── interface.c
-    |           |── interface.h   
+    |           |── interface.h     # user interface for file system
     |           |── pennFAT.c
-    |           |── pennFAT.h  
+    |           |── pennFAT.h       # standalone pennFAT
     |           |── utils.c
-    |           └── utils.h    
+    |           └── utils.h         # utility functions, global variables
     ├── doc/                     # Documentation files 
-    |    └── doc.pdf
+    |    └── doc.pdf             # Companion Document
     ├── log/                     # PennOS logs
     |    └── log.txt
     └── README.md
@@ -118,11 +118,7 @@ jobs
 logout
 ```
 
-### Description of Code and Code Layout
-
-[Provide a detailed description of the code, including any algorithms or data structures used. Explain the layout of the code, including the purpose of each file and how they interact with each other.]
-
 ### General Comments
 
-[Include any general comments or observations about your code, including any challenges that you faced while working on the project. This can help us better understand your thought process and approach to the project.]
+Very difficult project but we eventually made it through with sweat and blood. One thing bothered us is the floating point exception, we have tried to increase the stack size but it didn't help. It also didn't occur in most of our teammates' computers, just one person who consistently have that issue half of the times.  
 

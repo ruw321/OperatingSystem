@@ -6,7 +6,7 @@
 | Ruifan Wang | wang321 |
 | Jiaqi Xie | jiaqixie |
 | Zhiyuan Liang  | liangzhy |
-| Shuo Sun | sunshuo |
+| Shuo Sun | [PennKey] |
 
 
 ### Source Files (Description of Code)
@@ -122,5 +122,5 @@ logout
 
 ### General Comments
 
-Very difficult project but we eventually made it through with sweat and blood. One thing bothered us is the floating point exception, we have tried to increase the stack size but it didn't help. It also didn't occur in most of our teammates' computers, just one person who consistently have that issue half of the times.  
+Very difficult project but we eventually made it through with sweat and blood. One thing bothered us is the floating point exception, we have tried to increase the stack size but it didn't help. It also didn't occur in most of our teammates' computers, just one person who consistently have that issue half of the times. We have tested our code on several laptops. The floating point exception only occurs on the x86 laptop, Macbook with M1/M2 chip can run the code without any bugs. So if you meet the floating point exception, please just re-run it or switch to another non-x86 laptop. We guess the possible reason of this weird behavior is because of the different versions of docker on x86 and amd platforms.
 

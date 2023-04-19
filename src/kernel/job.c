@@ -264,25 +264,25 @@ void nicePidBuildinCommand(struct parsed_command *cmd) {
 }
 
 void manBuildinCommand() {
+    printf("cat file ... \n");
+    printf("sleep seconds \n");
+    printf("busy \n");
+    printf("echo string ... \n");
+    printf("ls \n");
+    printf("touch file ... \n");
+    printf("mv src dest \n");
+    printf("cp src dest \n");
+    printf("rm file ... \n");
+    printf("chmod mode file \n");
+    printf("ps \n");
+    printf("kill -signal_name pid \n");
     printf("zombify \n");
     printf("orphanify \n");
-    printf("cat [file ...] \n");
-    printf("sleep [seconds] \n");
-    printf("busy \n");
-    printf("echo [string ...] \n");
-    printf("ls \n");
-    printf("touch [file ...] \n");
-    printf("mv [src] [dest] \n");
-    printf("cp [src] [dest] \n");
-    printf("rm [file ...] \n");
-    printf("chmod [mode] [file] \n");
-    printf("ps \n");
-    printf("kill [-signal_name] [pid] \n");
-    printf("nice [priority] [cmd] \n");
-    printf("nice_pid [priority] [pid] \n");
+    printf("nice priority cmd \n");
+    printf("nice_pid priority pid \n");
     printf("man \n");
-    printf("bg [job_id] \n");
-    printf("fg [job_id] \n");
+    printf("bg job_id \n");
+    printf("fg job_id \n");
     printf("jobs \n");
     printf("logout \n");
 }

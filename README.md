@@ -74,7 +74,7 @@ make
 ```
 * Run the PennOS
 ```
-./bin/pennOS [filesystem] [loggile]
+./bin/pennOS [filesystem] [logfile]
 ```
 * Or the PennFAT
 ```

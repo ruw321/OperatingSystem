@@ -147,7 +147,17 @@ int shell_init(int argc, const char **argv) {
     }
 
     // initialize logger
-    log_init();
+    if (argc == 2) {
+        if (log_init(NULL) == FAILURE) {
+            return FAILURE;
+        };
+    } else {
+        if (log_init(argv[2]) == FAILURE) {
+            return FAILURE;
+        };
+    }
+    
+    
     // initialize file system
     if (fs_mount(argv[1]) == -1) {
         return FAILURE;

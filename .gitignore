@@ -2,4 +2,6 @@
 /bin/pennOS
 /bin/pennFAT
 /log/log.txt
-xxx
+/doc/*
+!/doc/*.pdf
+doxygen

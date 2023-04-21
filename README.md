@@ -1,12 +1,12 @@
 # PennOS (23sp-pennOS-group-24)
 ### Authors
 
-| Name | PennKey |
+| Name | Task |
 | --- | --- |
-| Ruifan Wang | wang321 |
-| Jiaqi Xie | jiaqixie |
-| Zhiyuan Liang  | liangzhy |
-| Shuo Sun | sunshuo |
+| Ruifan Wang | Kernel |
+| Jiaqi Xie | Kernel |
+| Zhiyuan Liang  | FileSystem |
+| Shuo Sun | Shell |
 
 
 ### Source Files (Description of Code)

@@ -61,10 +61,6 @@
     ├── log/                     # PennOS logs
     |    └── log.txt
     └── README.md
-
-### Extra Credit Answers
-
-- N/A 
   
 ### Compilation Instructions
 
@@ -80,10 +76,6 @@ make
 ```
 ./bin/pennFAT
 ```
-
-### Additional Logging Events
-- DQ_READY_SCHD: removed a process from the ready queue. 
-- EQ_READY_TOUT: added a process to the ready queue. 
 
 ### Overview of Work Accomplished
 

@@ -1,4 +1,10 @@
 # PennOS (23sp-pennOS-group-24)
+### Overview of Work Accomplished
+
+PennOS is an UNIX-like operating system created by our team. It has a file system called PennFAT, a priority-based scheduler, and allows users to interact with it through a shell. There are two states in PennOS: kernel land and user land, which can be switched using custom system calls.   
+The priority scheduler takes 3-level priorities into account and is implemented using the ucontext library and alarm clock. Users can interact with PennOS using a basic shell that accepts commands and built-ins. The system handles signals from the host operating system and provides a custom signal command called "kill." Additionally, it includes logging functionality for both the scheduler and kernel level functions, and an error handling mechanism.  
+A Companion Document in PDF format located in the ./doc directory provides more detailed information about the OS API and functionality. PennOS also supports a FAT file system, allowing basic interactions between the scheduler and the file system.
+
 ### Authors
 
 | Name | Task |
@@ -76,12 +82,6 @@ make
 ```
 ./bin/pennFAT
 ```
-
-### Overview of Work Accomplished
-
-PennOS is an UNIX-like operating system created by our team. It has a file system called PennFAT, a priority-based scheduler, and allows users to interact with it through a shell. There are two states in PennOS: kernel land and user land, which can be switched using custom system calls.   
-The priority scheduler takes 3-level priorities into account and is implemented using the ucontext library and alarm clock. Users can interact with PennOS using a basic shell that accepts commands and built-ins. The system handles signals from the host operating system and provides a custom signal command called "kill." Additionally, it includes logging functionality for both the scheduler and kernel level functions, and an error handling mechanism.  
-A Companion Document in PDF format located in the ./doc directory provides more detailed information about the OS API and functionality. PennOS also supports a FAT file system, allowing basic interactions between the scheduler and the file system.
 
 ### Shell Built-in Functions
 Built-in user programs
